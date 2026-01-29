@@ -15,7 +15,8 @@ export async function getGlobalAdminStats() {
         totalOrgs,
         totalUsers,
         pendingUpgrades,
-        recentInvoices
+        recentInvoices,
+        globalContingencyCount
     ] = await Promise.all([
         prisma.invoice.count(),
         prisma.organization.count(),
@@ -34,7 +35,8 @@ export async function getGlobalAdminStats() {
                     select: { name: true }
                 }
             }
-        })
+        }),
+        prisma.contingencyQueue.count({ where: { status: 'PENDING' } })
     ]);
 
     // Calcular facturación total estimada (sumando totalComprobante de facturas aceptadas/enviadas)
@@ -53,7 +55,8 @@ export async function getGlobalAdminStats() {
         totalUsers,
         pendingUpgrades,
         totalRevenue: revenueStats._sum.totalComprobante || 0,
-        recentInvoices
+        recentInvoices,
+        globalContingencyCount
     };
 }
 

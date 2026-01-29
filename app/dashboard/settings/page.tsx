@@ -15,11 +15,13 @@ import {
     ChevronLeft,
     AlertTriangle,
     Zap,
-    Fingerprint
+    Fingerprint,
+    Activity
 } from "lucide-react";
 import Link from "next/link";
 import { getDashboardStats } from "../actions/stats";
-import { updateHaciendaConfig } from "@/app/settings-actions";
+import { updateHaciendaConfig, updateBrandingConfig } from "@/app/settings-actions";
+import { Palette, Image as ImageIcon, Globe } from "lucide-react";
 
 /**
  * [SENTINEL SETTINGS - VAULT SECURITY]
@@ -45,6 +47,16 @@ export default function SettingsPage() {
     const [p12FileName, setP12FileName] = useState("");
     const [showSavedToast, setShowSavedToast] = useState(false);
 
+    // Enterprise Branding State
+    const [branding, setBranding] = useState({
+        logoUrl: "",
+        primaryColor: "#3b82f6",
+        secondaryColor: "#0f172a",
+        accentColor: "#10b981"
+    });
+    const [plan, setPlan] = useState("STARTER");
+    const [savingBranding, setSavingBranding] = useState(false);
+
     useEffect(() => {
         async function load() {
             try {
@@ -62,6 +74,13 @@ export default function SettingsPage() {
                         hasPass: !!org.hasHaciendaPass,
                         hasPin: !!org.hasHaciendaPin,
                         hasP12: !!org.hasHaciendaP12
+                    });
+                    setPlan(org.plan || "STARTER");
+                    setBranding({
+                        logoUrl: org.logoUrl || "",
+                        primaryColor: org.primaryColor || "#3b82f6",
+                        secondaryColor: org.secondaryColor || "#0f172a",
+                        accentColor: org.accentColor || "#10b981"
                     });
                 }
             } catch (e) {
@@ -290,6 +309,88 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </div>
+
+                        {/* ENTERPRISE BRANDING SECTION */}
+                        {(plan === 'ENTERPRISE' || plan === 'ADMIN') && (
+                            <div className="premium-card p-10 space-y-10 border-amber-500/20 bg-amber-500/[0.01]">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] flex items-center gap-3">
+                                        <Palette className="w-4 h-4" /> Personalización White Label
+                                    </h3>
+                                    <span className="px-3 py-1 bg-amber-500/10 text-amber-500 text-[8px] font-black rounded-lg border border-amber-500/20">ENTERPRISE</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div className="space-y-4">
+                                        <div className="group/input space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block">URL del Logo (SVG recomendado)</label>
+                                            <div className="flex gap-4">
+                                                <input
+                                                    value={branding.logoUrl}
+                                                    onChange={e => setBranding({ ...branding, logoUrl: e.target.value })}
+                                                    placeholder="https://tu-bucket.com/logo.svg"
+                                                    className="modern-input flex-1"
+                                                />
+                                                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden p-2">
+                                                    {branding.logoUrl ? <img src={branding.logoUrl} alt="Preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-slate-700" />}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="group/input space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block">Dominio Personalizado</label>
+                                            <div className="flex items-center gap-2 modern-input bg-slate-950/30">
+                                                <Globe className="w-4 h-4 text-slate-600" />
+                                                <input
+                                                    placeholder="factura.tuempresa.com"
+                                                    className="bg-transparent border-none outline-none flex-1 text-xs"
+                                                    disabled
+                                                />
+                                                <span className="text-[8px] font-black text-amber-500/50">PRÓXIMAMENTE</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <ColorPicker label="Principal" value={branding.primaryColor} onChange={c => setBranding({ ...branding, primaryColor: c })} />
+                                            <ColorPicker label="Secundario" value={branding.secondaryColor} onChange={c => setBranding({ ...branding, secondaryColor: c })} />
+                                            <ColorPicker label="Acento" value={branding.accentColor} onChange={c => setBranding({ ...branding, accentColor: c })} />
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-4">
+                                            <Activity className="w-4 h-4 text-blue-400 mt-1" />
+                                            <p className="text-[10px] text-slate-500 leading-relaxed italic">
+                                                Los colores seleccionados se aplicarán dinámicamente a la interfaz de tus usuarios y a las facturas PDF.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-white/5 flex justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            setSavingBranding(true);
+                                            try {
+                                                await updateBrandingConfig(branding);
+                                                setShowSavedToast(true);
+                                                setTimeout(() => setShowSavedToast(false), 3000);
+                                            } catch (e: any) {
+                                                alert(e.message);
+                                            } finally {
+                                                setSavingBranding(false);
+                                            }
+                                        }}
+                                        disabled={savingBranding}
+                                        className="px-8 py-3 bg-white text-slate-950 rounded-xl font-black text-[10px] uppercase hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 shadow-xl"
+                                    >
+                                        {savingBranding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                        Guardar Identidad
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </form>
             </main>
@@ -307,6 +408,28 @@ export default function SettingsPage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+        </div>
+    );
+}
+
+function ColorPicker({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-[9px] font-black text-slate-600 uppercase ml-1 block">{label}</label>
+            <div className="flex items-center gap-2 p-2 bg-white/5 rounded-xl border border-white/5 group-hover:border-white/10 transition-all">
+                <input
+                    type="color"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    className="w-6 h-6 bg-transparent border-none cursor-pointer"
+                />
+                <input
+                    type="text"
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    className="bg-transparent border-none outline-none font-mono text-[10px] w-full text-slate-300 uppercase"
+                />
+            </div>
         </div>
     );
 }

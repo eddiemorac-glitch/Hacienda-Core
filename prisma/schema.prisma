@@ -97,6 +97,13 @@ model Organization {
   tilopayTransactionId  String?   // [TILOPAY] Transaction ID for verification
   createdAt             DateTime  @default(now())
   logs                  AuditLog[]
+
+  // [ENTERPRISE BRANDING]
+  logoUrl               String?
+  primaryColor          String?   @default("#3b82f6")
+  secondaryColor        String?   @default("#0f172a")
+  accentColor           String?   @default("#10b981")
+  customDomain          String?   @unique
 }
 
 model AuditLog {

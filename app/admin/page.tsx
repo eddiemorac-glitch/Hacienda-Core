@@ -74,12 +74,15 @@ export default function SuperAdminDashboard() {
 
                 {/* KPI Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <KpiCard
-                        title="Organizaciones"
-                        value={stats?.totalOrgs}
-                        icon={<Building2 className="text-blue-400" />}
-                        subtitle="Clientes Activos"
-                    />
+                    <Link href="/admin/orgs" className="block outline-none">
+                        <KpiCard
+                            title="Organizaciones"
+                            value={stats?.totalOrgs}
+                            icon={<Building2 className="text-blue-400" />}
+                            subtitle="Clientes Activos"
+                            interactive
+                        />
+                    </Link>
                     <KpiCard
                         title="Documentos"
                         value={stats?.totalInvoices}
@@ -145,9 +148,9 @@ export default function SuperAdminDashboard() {
                         <div className="premium-card p-8 bg-indigo-500/5 border-indigo-500/20">
                             <h3 className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] mb-6">Accesos Rápidos</h3>
                             <div className="flex flex-col gap-3">
+                                <AdminLink href="/admin/orgs" label="Directorio de Orgs" icon={<Building2 className="w-4 h-4" />} />
                                 <AdminLink href="/admin/upgrades" label="Aprobar Pagos" icon={<CreditCard className="w-4 h-4" />} count={stats?.pendingUpgrades} />
                                 <AdminLink href="/dashboard/qa/playground" label="Laboratorio QA" icon={<Shield className="w-4 h-4" />} />
-                                <AdminLink href="/dashboard/api" label="Visor de API Keys" icon={<Users className="w-4 h-4" />} />
                             </div>
                         </div>
 
@@ -164,7 +167,22 @@ export default function SuperAdminDashboard() {
                                 <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
                                     <div className="h-full bg-emerald-500 w-[99.8%]" />
                                 </div>
-                                <p className="text-[9px] text-slate-500 italic">No se reportan caídas en la DGT en los últimos 30 mins.</p>
+
+                                {stats?.globalContingencyCount > 0 && (
+                                    <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Contingencia</span>
+                                        </div>
+                                        <span className="text-xs font-black text-white">{stats?.globalContingencyCount} DOCS</span>
+                                    </div>
+                                )}
+
+                                <p className="text-[10px] text-slate-500 italic mt-4">
+                                    {stats?.globalContingencyCount > 0
+                                        ? "Hay documentos en cola esperando reconexión con la DGT."
+                                        : "No se reportan caídas en la DGT en los últimos 30 mins."}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -176,9 +194,9 @@ export default function SuperAdminDashboard() {
     );
 }
 
-function KpiCard({ title, value, icon, subtitle, highlight }: any) {
+function KpiCard({ title, value, icon, subtitle, highlight, interactive }: any) {
     return (
-        <div className={`premium-card p-6 border transition-all ${highlight ? 'border-amber-500/50 bg-amber-500/5 scale-[1.02]' : 'border-white/5'}`}>
+        <div className={`premium-card p-6 border transition-all ${highlight ? 'border-amber-500/50 bg-amber-500/5 scale-[1.02]' : 'border-white/5'} ${interactive ? 'hover:border-primary/50 hover:bg-primary/[0.02]' : ''}`}>
             <div className="flex justify-between items-start mb-4">
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
                     {icon}

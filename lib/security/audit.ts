@@ -12,7 +12,8 @@ export type AuditAction =
     | 'AUTH_REGISTER'
     | 'API_KEY_CREATE'
     | 'STAGING_DOC_DELETE'
-    | 'SUBSCRIPTION_CHANGE';
+    | 'SUBSCRIPTION_CHANGE'
+    | 'BRANDING_UPDATE';
 
 export class AuditService {
     static async log(params: {

@@ -30,7 +30,12 @@ export async function getDashboardStats() {
                     haciendaUser: true,
                     haciendaPass: true,
                     haciendaPin: true,
-                    haciendaP12: true
+                    haciendaP12: true,
+                    haciendaEnv: true,
+                    logoUrl: true,
+                    primaryColor: true,
+                    secondaryColor: true,
+                    accentColor: true
                 }
             })
         ]);
@@ -45,6 +50,11 @@ export async function getDashboardStats() {
             stripeCustomerId: organization.stripeCustomerId,
             subscriptionEndsAt: organization.subscriptionEndsAt,
             haciendaUser: organization.haciendaUser || "",
+            haciendaEnv: organization.haciendaEnv || "staging",
+            logoUrl: organization.logoUrl || "",
+            primaryColor: organization.primaryColor || "#3b82f6",
+            secondaryColor: organization.secondaryColor || "#0f172a",
+            accentColor: organization.accentColor || "#10b981",
             // Indicadores de configuración (no valores reales)
             hasHaciendaPass: !!organization.haciendaPass,
             hasHaciendaPin: !!organization.haciendaPin,

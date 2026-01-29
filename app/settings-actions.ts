@@ -76,3 +76,48 @@ export async function updateHaciendaConfig(data: {
 
     return { success: true, updatedFields };
 }
+
+export async function updateBrandingConfig(data: {
+    logoUrl?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    accentColor?: string;
+}) {
+    const session = await getServerSession(authOptions);
+    if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
+
+    const orgId = (session.user as any).orgId;
+
+    // Validar que sea Enterprise para usar estas perillas
+    const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { plan: true }
+    });
+
+    if (org?.plan !== 'ENTERPRISE' && (session.user as any).role !== 'ADMIN') {
+        throw new Error("Función exclusiva del Plan ENTERPRISE");
+    }
+
+    const updated = await prisma.organization.update({
+        where: { id: orgId },
+        data: {
+            logoUrl: data.logoUrl,
+            primaryColor: data.primaryColor,
+            secondaryColor: data.secondaryColor,
+            accentColor: data.accentColor,
+        }
+    });
+
+    revalidatePath("/dashboard/settings");
+
+    // [LOG] Auditoría
+    const { AuditService } = await import("@/lib/security/audit");
+    await AuditService.log({
+        orgId,
+        userId: (session.user as any).id,
+        action: 'BRANDING_UPDATE',
+        details: { branding: data }
+    });
+
+    return { success: true };
+}
