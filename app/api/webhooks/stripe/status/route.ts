@@ -69,7 +69,7 @@ export async function POST(req: Request) {
             case "customer.subscription.updated":
             case "customer.subscription.deleted": {
                 const subscription = event.data.object as Stripe.Subscription;
-                let orgId = subscription.metadata?.orgId;
+                let orgId: string | undefined = subscription.metadata?.orgId;
 
                 // [FALLBACK] Si no hay orgId en metadata, buscar por stripeCustomerId
                 if (!orgId) {
