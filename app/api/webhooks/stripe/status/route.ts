@@ -12,7 +12,15 @@ import { PLANS } from "@/lib/stripe-config";
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
+    // Si no está configurado Stripe, responder con 200 para no romper el build
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.warn("⚠️ Stripe secret key missing. Skipping webhook processing.");
+        return NextResponse.json({ received: true });
+    }
+
     const body = await req.text();
     const h = await headers();
     const sig = h.get("stripe-signature") as string;
