@@ -10,6 +10,10 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Nova Billing | Sentinel Electronic Control v4.4",
   description: "Advanced Electronic Invoicing Infrastructure for Costa Rica. Secured by Sentinel Swarm.",
+  icons: {
+    icon: "/logo-hacienda-core.svg",
+    apple: "/logo-hacienda-core.svg",
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

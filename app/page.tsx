@@ -45,8 +45,8 @@ export default function LandingPage() {
       {/* Floating Header */}
       <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-[100] glass-card px-8 py-4 rounded-3xl border border-white/5 flex items-center justify-between backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-            <Layers className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 flex items-center justify-center p-1">
+            <img src="/logo-hacienda-core.svg" alt="HC" className="w-full h-full" />
           </div>
           <span className="font-black text-xl text-white tracking-tighter">HaciendaCore</span>
         </div>
@@ -175,8 +175,8 @@ export default function LandingPage() {
       <footer className="w-full border-t border-white/5 py-12 px-8 bg-slate-950/50 mt-20">
         <div className="max-w-7xl mx-auto flex flex-col md:row justify-between items-center gap-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-              <Layers className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 flex items-center justify-center p-1">
+              <img src="/logo-hacienda-core.svg" alt="HC" className="w-full h-full" />
             </div>
             <span className="font-bold text-lg tracking-tight">HaciendaCore</span>
           </div>
@@ -263,10 +263,10 @@ function PricingCard({
         onClick={handleSelect}
         disabled={loading || (session?.user as any)?.plan === name.toUpperCase()}
         className={`w-full py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 ${(session?.user as any)?.plan === name.toUpperCase()
-            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-            : featured
-              ? 'bg-primary text-white hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]'
-              : 'bg-white/5 text-white hover:bg-white/10'
+          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          : featured
+            ? 'bg-primary text-white hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]'
+            : 'bg-white/5 text-white hover:bg-white/10'
           } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
