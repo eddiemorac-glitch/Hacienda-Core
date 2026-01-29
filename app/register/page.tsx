@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, ArrowRight, Loader2, Building2, User, Mail, Lock, CreditCard } from "lucide-react";
 import Link from "next/link";
-import { register } from "../actions";
+import { register } from "../auth-actions";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -165,8 +165,8 @@ export default function RegisterPage() {
                                             <div
                                                 key={step}
                                                 className={`h-1 flex-1 rounded-full transition-all duration-500 ${step <= score
-                                                        ? score <= 2 ? 'bg-red-500' : score === 3 ? 'bg-amber-500' : 'bg-emerald-500'
-                                                        : 'bg-white/5'
+                                                    ? score <= 2 ? 'bg-red-500' : score === 3 ? 'bg-amber-500' : 'bg-emerald-500'
+                                                    : 'bg-white/5'
                                                     }`}
                                             />
                                         );

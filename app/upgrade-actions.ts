@@ -1,7 +1,8 @@
+
 "use server";
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { PLAN_PRICES, SINPE_INFO, PLAN_HIERARCHY } from "@/lib/payment-config";
@@ -17,7 +18,7 @@ import { PLAN_PRICES, SINPE_INFO, PLAN_HIERARCHY } from "@/lib/payment-config";
  * Creates a new upgrade request
  */
 export async function createUpgradeRequest(requestedPlan: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }
@@ -98,7 +99,7 @@ export async function createUpgradeRequest(requestedPlan: string) {
  * Upload payment proof (comprobante) for an upgrade request
  */
 export async function uploadPaymentProof(requestId: string, proofData: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }
@@ -134,7 +135,7 @@ export async function uploadPaymentProof(requestId: string, proofData: string) {
 }
 
 export async function getMyUpgradeRequest() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return null;
     }
@@ -156,7 +157,7 @@ export async function getMyUpgradeRequest() {
  * Get all pending upgrade requests (Admin only)
  */
 export async function getPendingUpgradeRequests() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }
@@ -193,7 +194,7 @@ export async function getPendingUpgradeRequests() {
  * Approve an upgrade request (Admin only)
  */
 export async function approveUpgradeRequest(requestId: string, adminNotes?: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }
@@ -265,7 +266,7 @@ export async function approveUpgradeRequest(requestId: string, adminNotes?: stri
  * Reject an upgrade request (Admin only)
  */
 export async function rejectUpgradeRequest(requestId: string, reason: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }
@@ -308,7 +309,7 @@ export async function rejectUpgradeRequest(requestId: string, reason: string) {
  * Manually set a user's plan (Admin only, for special cases)
  */
 export async function setOrgPlan(orgId: string, plan: string, status: string = "active") {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user) {
         return { error: "No autorizado" };
     }

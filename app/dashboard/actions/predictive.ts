@@ -1,9 +1,10 @@
+
 'use server';
 
 import { CABYS_MOCK, CabysItem } from '@/lib/hacienda/cabys-data';
 import { prisma } from '@/lib/db';
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 
 /**
  * [SENTINEL - PREDICTIVE ENGINE]
@@ -17,7 +18,7 @@ export async function getCabysCatalog(): Promise<CabysItem[]> {
 }
 
 export async function getClientHistory(): Promise<any[]> {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) return [];
 
     const orgId = (session.user as any).orgId;

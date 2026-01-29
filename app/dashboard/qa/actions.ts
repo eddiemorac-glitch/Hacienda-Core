@@ -1,9 +1,11 @@
+
 'use server';
 
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { processDocument, DocumentState } from "@/app/actions";
+import { getAuthOptions } from "@/lib/auth-options";
+import { processDocument } from "@/app/actions";
+import { DocumentState } from "@/lib/hacienda/document-service";
 import { setMockMode } from "@/lib/testing/hacienda-simulator";
 
 export async function toggleSimulator(online: boolean) {
@@ -17,12 +19,12 @@ export async function toggleSimulator(online: boolean) {
 
 export async function runGhostInvoices(isLocalBypass = false) {
     if (!isLocalBypass) {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session || !(session.user as any).orgId) throw new Error("Unauthorized");
     }
 
     // Si es bypass, buscamos la primera org del sistema para la prueba
-    const orgId = isLocalBypass ? (await prisma.organization.findFirst())?.id : (await getServerSession(authOptions) as any).user.orgId;
+    const orgId = isLocalBypass ? (await prisma.organization.findFirst())?.id : (await getServerSession(getAuthOptions()) as any).user.orgId;
     if (!orgId) throw new Error("No organization found for stress test");
     const formData = new FormData();
     formData.append("pin", "1234");

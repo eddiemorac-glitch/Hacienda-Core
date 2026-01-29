@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { ApiKeyService } from "@/lib/api-key";
-import { executeDocumentWorkflow } from "@/app/actions";
+import { DocumentService } from "@/lib/hacienda/document-service";
 import { headers } from "next/headers";
+import { decrypt } from "@/lib/security/crypto";
 
 /**
  * [PUBLIC API] - POST /api/v1/factura/emision
@@ -20,15 +21,15 @@ export async function POST(req: Request) {
 
         const { docData, type } = await req.json();
 
-        const result = await executeDocumentWorkflow({
+        const result = await DocumentService.executeWorkflow({
             orgId: organization.id,
             docData,
             type: type || 'FE',
             security: {
                 p12Buffer: Buffer.from(organization.haciendaP12, 'base64'),
-                pin: organization.haciendaPin!,
+                pin: decrypt(organization.haciendaPin!),
                 haciendaUser: organization.haciendaUser!,
-                haciendaPass: organization.haciendaPass!
+                haciendaPass: decrypt(organization.haciendaPass!)
             }
         });
 

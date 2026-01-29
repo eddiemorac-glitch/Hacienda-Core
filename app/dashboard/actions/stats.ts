@@ -1,13 +1,14 @@
+
 'use server';
 
 import { prisma } from '@/lib/db';
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { HaciendaClient } from '@/lib/hacienda/api-client';
 
 export async function getDashboardStats() {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session || !(session.user as any).orgId) return { todayCount: 0, totalPending: 0, org: null };
         const orgId = (session.user as any).orgId;
 
@@ -76,7 +77,7 @@ export async function getDashboardStats() {
 
 export async function getLatestInvoices() {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session || !(session.user as any).orgId) return [];
         const orgId = (session.user as any).orgId;
 

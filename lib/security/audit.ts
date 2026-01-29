@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/db";
 
 /**
  * [SENTINEL AUDITOR] - Action Tracking System
@@ -24,6 +23,7 @@ export class AuditService {
         ip?: string;
     }) {
         try {
+            const { prisma } = await import("@/lib/db");
             // [ROBUSTNESS] Safe access to prisma model to avoid crashes if types aren't generated
             const audit = (prisma as any).auditLog;
             if (audit) {

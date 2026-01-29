@@ -1,7 +1,8 @@
+
 "use server";
 
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/db";
 import { tilopay } from "@/lib/tilopay";
 
@@ -34,7 +35,7 @@ const TILOPAY_PLANS = {
 
 export async function createTilopayCheckout(planId: string): Promise<{ url?: string; error?: string }> {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session?.user) {
             return { error: "No autorizado" };
         }
@@ -119,7 +120,7 @@ export async function verifyTilopayPayment(orderId: string): Promise<{
     error?: string
 }> {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session?.user) {
             return { success: false, error: "No autorizado" };
         }

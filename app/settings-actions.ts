@@ -1,8 +1,9 @@
+
 'use server';
 
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { revalidatePath } from "next/cache";
 
 export async function updateHaciendaConfig(data: {
@@ -12,7 +13,7 @@ export async function updateHaciendaConfig(data: {
     haciendaP12: string;
     haciendaEnv?: string;
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
 
     const orgId = (session.user as any).orgId;
@@ -83,7 +84,7 @@ export async function updateBrandingConfig(data: {
     secondaryColor?: string;
     accentColor?: string;
 }) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
 
     const orgId = (session.user as any).orgId;

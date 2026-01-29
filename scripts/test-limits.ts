@@ -1,6 +1,6 @@
 
 import { prisma } from "../lib/db";
-import { executeDocumentWorkflow } from "../app/actions";
+import { DocumentService } from "../lib/hacienda/document-service";
 import { PLANS } from "../lib/stripe-config";
 import { ApiKeyService } from "../lib/api-key";
 
@@ -73,7 +73,7 @@ async function runLimitTests() {
     };
 
     try {
-        await executeDocumentWorkflow({
+        await DocumentService.executeWorkflow({
             orgId: starterOrg.id,
             docData: docDataMock,
             type: 'FE',

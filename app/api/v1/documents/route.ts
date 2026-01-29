@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ApiKeyService } from "@/lib/api-key";
-import { executeDocumentWorkflow } from "@/app/actions";
+import { DocumentService } from "@/lib/hacienda/document-service";
 import { headers } from "next/headers";
 import { PLANS } from "@/lib/stripe-config";
 
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         // 4. Trigger the Perfect v4.4 Engine
         const { decrypt } = await import("@/lib/security/crypto");
 
-        const result = await executeDocumentWorkflow({
+        const result = await DocumentService.executeWorkflow({
             orgId: organization.id,
             docData,
             type: type as 'FE' | 'REP' | 'FEC',

@@ -1,8 +1,9 @@
+
 'use server';
 
 import { ApiKeyService } from "@/lib/api-key";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 
@@ -11,7 +12,7 @@ import { revalidatePath } from "next/cache";
  */
 
 export async function createNewApiKey(name: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
 
     const orgId = (session.user as any).orgId;
@@ -23,7 +24,7 @@ export async function createNewApiKey(name: string) {
 }
 
 export async function deleteApiKey(id: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
 
     const orgId = (session.user as any).orgId;
@@ -37,7 +38,7 @@ export async function deleteApiKey(id: string) {
 }
 
 export async function getApiKeys() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) return [];
 
     const orgId = (session.user as any).orgId;
@@ -49,7 +50,7 @@ export async function getApiKeys() {
 }
 
 export async function getApiUsage() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) return [];
 
     const orgId = (session.user as any).orgId;

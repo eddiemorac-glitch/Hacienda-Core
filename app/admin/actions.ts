@@ -1,11 +1,12 @@
+
 'use server';
 
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 
 export async function getGlobalAdminStats() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }
@@ -61,7 +62,7 @@ export async function getGlobalAdminStats() {
 }
 
 export async function getAllOrganizations() {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }
@@ -77,7 +78,7 @@ export async function getAllOrganizations() {
 }
 
 export async function updateOrganizationPlan(orgId: string, plan: string) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }

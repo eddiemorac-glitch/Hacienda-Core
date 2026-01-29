@@ -1,7 +1,8 @@
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getAuthOptions } from '@/lib/auth-options';
 
 /**
  * [SENTINEL - DOCUMENT API]
@@ -12,7 +13,7 @@ export async function GET(
     request: Request,
     { params }: { params: Promise<{ clave: string }> }
 ) {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !(session.user as any).orgId) {
         return new NextResponse("Unauthorized", { status: 401 });
     }

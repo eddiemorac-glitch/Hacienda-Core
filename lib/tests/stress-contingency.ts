@@ -1,4 +1,4 @@
-import { executeDocumentWorkflow } from '../../app/actions';
+import { DocumentService } from '../hacienda/document-service';
 import { prisma } from '../db';
 import { ContingenciaService } from '../hacienda/contingencia';
 
@@ -81,7 +81,7 @@ async function stressTest() {
     console.log(`\n📦 Disparando ráfaga de 3 documentos (Org: ${org.name})...`);
 
     const results = [];
-    results.push(await executeDocumentWorkflow({
+    results.push(await DocumentService.executeWorkflow({
         orgId: org.id,
         docData: { ...mockDoc, emisor: { ...mockDoc.emisor, nombre: "STRESS DOC 1" } } as any,
         type: 'FE',
@@ -90,7 +90,7 @@ async function stressTest() {
 
     await new Promise(r => setTimeout(r, 2000)); // Longer delay
 
-    results.push(await executeDocumentWorkflow({
+    results.push(await DocumentService.executeWorkflow({
         orgId: org.id,
         docData: { ...mockDoc, emisor: { ...mockDoc.emisor, nombre: "STRESS DOC 2" } } as any,
         type: 'FE',
@@ -99,7 +99,7 @@ async function stressTest() {
 
     await new Promise(r => setTimeout(r, 2000));
 
-    results.push(await executeDocumentWorkflow({
+    results.push(await DocumentService.executeWorkflow({
         orgId: org.id,
         docData: { ...mockDoc, emisor: { ...mockDoc.emisor, nombre: "STRESS DOC 3" } } as any,
         type: 'FE',

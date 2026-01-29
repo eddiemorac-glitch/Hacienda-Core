@@ -1,11 +1,23 @@
+
 import { PrismaClient } from '@prisma/client';
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+/**
+ * [PRISMA SINGLETON] - High Performance DB Connection
+ * Pattern recommended for Next.js to prevent connection exhaustion.
+ */
 
-export const prisma =
-    globalForPrisma.prisma ||
-    new PrismaClient({
-        log: ['query'],
+const prismaClientSingleton = () => {
+    return new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
     });
+};
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+declare global {
+    var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
+}
+
+const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
+
+export { prisma };
+
+if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma;

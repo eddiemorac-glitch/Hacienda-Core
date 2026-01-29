@@ -1,15 +1,16 @@
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { PdfService } from "@/lib/pdf-service";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ clave: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions);
+        const session = await getServerSession(getAuthOptions());
         if (!session || !(session.user as any).orgId) {
             return NextResponse.json({ error: "No autenticado" }, { status: 401 });
         }

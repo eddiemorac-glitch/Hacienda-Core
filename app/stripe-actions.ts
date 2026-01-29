@@ -1,8 +1,9 @@
+
 'use server';
 
 import { stripe, validateStripeConfig } from "@/lib/stripe";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 
@@ -12,7 +13,7 @@ import { redirect } from "next/navigation";
  */
 export async function createCheckoutSession(priceId: string) {
     validateStripeConfig();
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
 
     if (!session || !session.user || !(session.user as any).orgId) {
         throw new Error("Debe estar autenticado para realizar esta acción.");
@@ -144,7 +145,7 @@ export async function createCheckoutSession(priceId: string) {
 
 export async function createPortalSession() {
     validateStripeConfig();
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session || !session.user || !(session.user as any).orgId) {
         throw new Error("No autenticado");
     }

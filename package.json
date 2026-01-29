@@ -13,7 +13,6 @@
     "simulator": "npx tsx lib/testing/hacienda-simulator.ts"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.22.0",
     "@react-pdf/renderer": "^4.3.2",
     "@stripe/stripe-js": "^8.6.4",

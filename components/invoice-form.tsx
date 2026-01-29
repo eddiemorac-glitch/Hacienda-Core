@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { processDocument, DocumentState } from "@/app/actions";
+import { processDocument } from "@/app/actions";
+import { DocumentState } from "@/lib/hacienda/document-service";
 import {
     ShieldCheck, Send, Loader2, FileCheck, AlertCircle,
     Trash2, PlusCircle, CreditCard, ShoppingBag,
