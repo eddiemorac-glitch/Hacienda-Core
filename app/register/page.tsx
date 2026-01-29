@@ -158,7 +158,9 @@ export default function RegisterPage() {
                             </div>
                             <div className="group/pass">
                                 <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
+                                    <div className="absolute left-4 inset-y-0 flex items-center pointer-events-none">
+                                        <Lock className="w-4 h-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
+                                    </div>
                                     <input
                                         required
                                         type="password"
