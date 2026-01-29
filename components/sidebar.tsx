@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
     Shield, Home, FileText, Activity, LogOut, Terminal, Settings,
     Book, BookOpen, ShieldCheck, CreditCard, Zap, Crown, Sparkles,
-    Clock, AlertCircle
+    Clock, AlertCircle, LayoutDashboard
 } from "lucide-react";
 import { getMyUpgradeRequest } from "@/app/upgrade-actions";
 import { usePathname, useRouter } from "next/navigation";
@@ -148,6 +148,7 @@ export function Sidebar() {
                         <div className="px-3 mb-2 mt-4">
                             <span className="text-[9px] font-bold text-amber-400/60 uppercase tracking-widest">Admin</span>
                         </div>
+                        <NavLink href="/admin" icon={<LayoutDashboard className="w-5 h-5 text-amber-500" />} label="Command Center" active={pathname === '/admin'} />
                         <NavLink href="/admin/upgrades" icon={<CreditCard className="w-5 h-5 text-amber-500" />} label="Gestión Upgrades" active={pathname === '/admin/upgrades'} />
                         <NavLink href="/dashboard/qa/playground" icon={<ShieldCheck className="w-5 h-5 text-amber-500" />} label="Lab Swarm (QA)" active={pathname === '/dashboard/qa/playground'} />
                     </>
