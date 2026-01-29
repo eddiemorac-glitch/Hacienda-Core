@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// [FIX] Modelo para manejar consecutivos secuenciales por organización/sucursal/terminal
+// Hacienda exige que los consecutivos sean estrictamente secuenciales
+model DocumentSequence {
+  id        String   @id @default(cuid())
+  orgId     String
+  sucursal  String   @default("001")
+  terminal  String   @default("00001")
+  tipoDoc   String   // FE, REP, FEC
+  lastNumber Int     @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, sucursal, terminal, tipoDoc])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+  orgId         String?
+  organization  Organization? @relation(fields: [orgId], references: [id])
+  role          String    @default("USER") // USER, ADMIN
+  createdAt     DateTime  @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Organization {
+  id                    String    @id @default(cuid())
+  name                  String
+  cedula                String    @unique
+  plan                  String    @default("STARTER") // STARTER, BUSINESS, ENTERPRISE
+  haciendaUser          String?
+  haciendaPass          String?
+  haciendaPin           String?
+  haciendaP12           String?   @db.Text // Base64 encoded .p12
+  haciendaEnv           String    @default("staging") // staging, production
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  stripePriceId         String?
+  subscriptionStatus    String?   // active, trialing, past_due, canceled
+  subscriptionEndsAt    DateTime?
+  invoices              Invoice[]
+  users                 User[]
+  apiKeys               ApiKey[]
+  usage                 ApiUsage[]
+  webhookUrl            String?   // External URL for notifications
+  webhookSecret         String?   // [SECURITY] Secret for signing payloads
+  createdAt             DateTime  @default(now())
+  logs                  AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  orgId     String
+  organization Organization @relation(fields: [orgId], references: [id])
+  userId    String?
+  action    String   // e.g. "INVOICE_CREATE", "CONFIG_UPDATE"
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  orgId           String?
+  organization    Organization? @relation(fields: [orgId], references: [id])
+  tipoDocumento   String   @default("FE")
+  clave           String   @unique
+  consecutivo     String   @unique
+  fechaEmision    DateTime
+  referenciaClave String? 
+  montoPago       Decimal? @db.Decimal(18, 5)
+  emisorNombre    String
+  emisorCedula    String
+  receptorNombre  String?
+  receptorCedula  String?
+  receptorCorreo  String?
+  moneda           String   @default("CRC")
+  totalVenta       Decimal  @db.Decimal(18, 5)
+  totalImpuesto    Decimal  @db.Decimal(18, 5)
+  totalComprobante Decimal  @db.Decimal(18, 5)
+  estado          String   @default("CREADO")
+  mensajeHacienda String?
+  xmlFirmado      String   @db.Text
+  docData         Json?    // [FIX] Almacena el payload original para facilitar PDF y vistas
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ContingencyQueue {
+  id        String   @id @default(uuid())
+  orgId     String
+  clave     String
+  xmlSigned String   @db.Text
+  errorLog  String?
+  intentos  Int      @default(0)
+  status    String   @default("PENDING")
+  nextRetryAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique // Hashed key
+  prefix    String   // First 8 chars for display
+  name      String?
+  orgId     String
+  organization Organization @relation(fields: [orgId], references: [id])
+  isActive  Boolean  @default(true)
+  lastUsed  DateTime?
+  createdAt DateTime @default(now())
+}
+
+model ApiUsage {
+  id        String   @id @default(cuid())
+  orgId     String
+  organization Organization @relation(fields: [orgId], references: [id])
+  date      DateTime @default(now())
+  calls     Int      @default(0)
+  @@unique([orgId, date])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+// [HYBRID PAYMENT SYSTEM] Solicitudes de upgrade con verificación manual
+model UpgradeRequest {
+  id              String   @id @default(cuid())
+  orgId           String
+  requestedPlan   String   // STARTER, BUSINESS, ENTERPRISE
+  currentPlan     String
+  amountCRC       Int      // Monto en colones
+  paymentMethod   String   @default("SINPE") // SINPE, TRANSFER, TILOPAY
+  paymentProof    String?  @db.Text // URL o base64 del comprobante
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes      String?
+  processedBy     String?  // ID del admin que procesó
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Para cuando Tilopay funcione
+  tilopayTxId     String?
+  tilopayStatus   String?
+}
+

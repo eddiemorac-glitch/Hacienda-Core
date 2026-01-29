@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(222 47% 1%);
+  --color-foreground: hsl(210 40% 98%);
+  --color-primary: hsl(217.2 91.2% 59.8%);
+  --color-secondary: hsl(217.2 32.6% 17.5%);
+  --color-muted: hsl(217.2 32.6% 17.5%);
+  --color-accent: hsl(217.2 32.6% 17.5%);
+  --color-success: hsl(142 70% 45%);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-slate-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+
+  .premium-card {
+    @apply bg-[#030712] border border-white/5 rounded-[2rem] shadow-2xl transition-all duration-500;
+  }
+
+  .modern-input {
+    @apply w-full bg-white/[0.03] border border-white/[0.05] rounded-xl px-4 py-3 text-sm outline-none transition-all duration-300;
+  }
+
+  .modern-input:focus {
+    @apply border-primary/50 bg-white/[0.05] ring-4 ring-primary/10 shadow-lg;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-white/40;
+  }
+
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400;
+  }
+
+  .glow-primary {
+    @apply shadow-2xl;
+  }
+
+  .nav-blur {
+    @apply backdrop-blur-md bg-background/80 border-b border-white/5;
+  }
+}
+
+/* Custom Scrollbar for Nova UI */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
