@@ -33,7 +33,8 @@ export default function SettingsPage() {
         haciendaUser: "",
         haciendaPass: "",
         haciendaPin: "",
-        haciendaP12: ""
+        haciendaP12: "",
+        haciendaEnv: "staging" as "staging" | "production"
     });
     // Indicadores de configuración existente (no valores reales)
     const [existingConfig, setExistingConfig] = useState({
@@ -54,7 +55,8 @@ export default function SettingsPage() {
                         haciendaUser: org.haciendaUser || "",
                         haciendaPass: "", // Nunca mostramos contraseñas encriptadas
                         haciendaPin: "",   // Nunca mostramos PINs encriptados
-                        haciendaP12: ""    // Solo se carga cuando se sube un nuevo archivo
+                        haciendaP12: "",    // Solo se carga cuando se sube un nuevo archivo
+                        haciendaEnv: (org.haciendaEnv as any) || "staging"
                     });
                     setExistingConfig({
                         hasPass: !!org.hasHaciendaPass,
@@ -186,6 +188,33 @@ export default function SettingsPage() {
                                     className="modern-input font-mono"
                                 />
                                 <p className="text-[9px] text-slate-600 ml-1">Físico: cpf-01-xxxx-xxxxxx | Jurídico: cpf-02-xxxx-xxxxxxxx</p>
+                            </div>
+
+                            <div className="group/input space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block group-focus-within/input:text-primary transition-colors">
+                                    Ambiente de Hacienda
+                                </label>
+                                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfig({ ...config, haciendaEnv: 'staging' })}
+                                        className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${config.haciendaEnv === 'staging' ? 'bg-amber-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Staging (Pruebas)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setConfig({ ...config, haciendaEnv: 'production' })}
+                                        className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${config.haciendaEnv === 'production' ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        Producción (Real)
+                                    </button>
+                                </div>
+                                <p className="text-[9px] text-slate-600 ml-1">
+                                    {config.haciendaEnv === 'production'
+                                        ? "🚨 Modo REAL: Los documentos tienen validez legal."
+                                        : "🛠️ Modo PRUEBAS: No tiene validez ante la DGT."}
+                                </p>
                             </div>
 
                             <div className="group/input space-y-2">

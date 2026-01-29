@@ -10,6 +10,7 @@ export async function updateHaciendaConfig(data: {
     haciendaPass: string;
     haciendaPin: string;
     haciendaP12: string;
+    haciendaEnv?: string;
 }) {
     const session = await getServerSession(authOptions);
     if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
@@ -44,6 +45,12 @@ export async function updateHaciendaConfig(data: {
     if (data.haciendaP12 && data.haciendaP12.trim() !== '') {
         updateData.haciendaP12 = data.haciendaP12;
         updatedFields.push('haciendaP12');
+    }
+
+    // Ambiente siempre se sincroniza si viene
+    if (data.haciendaEnv) {
+        updateData.haciendaEnv = data.haciendaEnv;
+        updatedFields.push('haciendaEnv');
     }
 
     // Solo hacer el update si hay algo que actualizar
