@@ -19,10 +19,15 @@ import { AuditService } from '@/lib/security/audit';
 // [ZOD SHIELD] Validation Schemas
 const RegisterSchema = z.object({
     email: z.string().email("Correo electrónico inválido"),
-    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-    name: z.string().min(3, "Nombre muy corto"),
-    orgName: z.string().min(3, "Nombre de organización muy corto"),
-    cedula: z.string().regex(/^\d{9,12}$/, "La cédula debe tener entre 9 y 12 dígitos numéricos"),
+    password: z.string()
+        .min(8, "La contraseña debe tener al menos 8 caracteres")
+        .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+        .regex(/[a-z]/, "Debe contener al menos una minúscula")
+        .regex(/[0-9]/, "Debe contener al menos un número")
+        .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial"),
+    name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+    orgName: z.string().min(3, "El nombre de la organización debe tener al menos 3 caracteres"),
+    cedula: z.string().regex(/^\d{9,12}$/, "La cédula debe ser numérica (9-12 dígitos)"),
     plan: z.string().optional()
 });
 

@@ -143,8 +143,8 @@ export default function RegisterPage() {
                                     className="modern-input pl-12"
                                 />
                             </div>
-                            <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="relative group/pass">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
                                 <input
                                     required
                                     type="password"
@@ -153,6 +153,28 @@ export default function RegisterPage() {
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
                                     className="modern-input pl-12"
                                 />
+                                {/* Password Strength Visualizer */}
+                                <div className="mt-2 flex gap-1 px-1">
+                                    {[1, 2, 3, 4].map((step) => {
+                                        const score =
+                                            (formData.password.length >= 8 ? 1 : 0) +
+                                            (/[A-Z]/.test(formData.password) ? 1 : 0) +
+                                            (/[0-9]/.test(formData.password) ? 1 : 0) +
+                                            (/[^A-Za-z0-9]/.test(formData.password) ? 1 : 0);
+                                        return (
+                                            <div
+                                                key={step}
+                                                className={`h-1 flex-1 rounded-full transition-all duration-500 ${step <= score
+                                                        ? score <= 2 ? 'bg-red-500' : score === 3 ? 'bg-amber-500' : 'bg-emerald-500'
+                                                        : 'bg-white/5'
+                                                    }`}
+                                            />
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-[9px] text-slate-500 mt-2 ml-1 italic">
+                                    Mín. 8 caracteres, mayúscula, número y símbolo.
+                                </p>
                             </div>
                         </div>
                     </div>
