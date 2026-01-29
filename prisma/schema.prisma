@@ -93,6 +93,8 @@ model Organization {
   usage                 ApiUsage[]
   webhookUrl            String?   // External URL for notifications
   webhookSecret         String?   // [SECURITY] Secret for signing payloads
+  tilopayOrderId        String?   // [TILOPAY] Order ID for verification
+  tilopayTransactionId  String?   // [TILOPAY] Transaction ID for verification
   createdAt             DateTime  @default(now())
   logs                  AuditLog[]
 }

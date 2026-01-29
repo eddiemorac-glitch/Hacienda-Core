@@ -64,7 +64,54 @@ export default function PlaygroundPage() {
             const mockFormData = new FormData();
             mockFormData.append('pin', '1234');
 
-            const res = await processDocument(mockFormData, { emisor: { numeroIdentificacion: '3101000000' } }, type);
+            const res = await processDocument(mockFormData, {
+                claveStr: "",
+                consecutivoStr: "",
+                fechaEmision: new Date(),
+                emisor: {
+                    nombre: "QA TEST",
+                    tipoIdentificacion: "02",
+                    numeroIdentificacion: "3101000000",
+                    correo: "test@qa.com"
+                },
+                receptor: {
+                    nombre: "RECEPTOR TEST",
+                    tipoIdentificacion: "01",
+                    numeroIdentificacion: "111111111",
+                    correo: "receptor@test.com"
+                },
+                condicionVenta: "01",
+                medioPago: ["01"],
+                detalles: [{
+                    numeroLinea: 1,
+                    codigoCabys: "8314100000000",
+                    cantidad: 1,
+                    unidadMedida: "Unid",
+                    detalle: "Test Item",
+                    precioUnitario: 1,
+                    montoTotal: 1,
+                    subTotal: 1,
+                    montoTotalLinea: 1.13,
+                    impuesto: { codigo: "01", codigoTarifa: "08", tarifa: 13, monto: 0.13 }
+                }],
+                resumen: {
+                    codigoMoneda: "CRC",
+                    totalVenta: 1,
+                    totalImpuesto: 0.13,
+                    totalComprobante: 1.13,
+                    totalDescuentos: 0,
+                    totalVentaNeta: 1,
+                    totalGravado: 1,
+                    totalExento: 0,
+                    totalExonerado: 0,
+                    totalServiciosGravados: 0,
+                    totalServiciosExentos: 0,
+                    totalServiciosExonerados: 0,
+                    totalMercanciasGravadas: 1,
+                    totalMercanciasExentas: 0,
+                    totalMercanciasExoneradas: 0
+                }
+            }, type);
 
             if (res.status === 'error') {
                 setStatus({
@@ -149,9 +196,9 @@ export default function PlaygroundPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={`p-10 rounded-[2.5rem] border flex items-center gap-6 ${status.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                status.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                                    status.type === 'danger' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                            status.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+                                status.type === 'danger' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
                             }`}
                     >
                         <div className="w-16 h-16 rounded-2xl bg-current opacity-10 flex items-center justify-center flex-shrink-0">
