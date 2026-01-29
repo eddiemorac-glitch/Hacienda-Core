@@ -156,16 +156,18 @@ export default function RegisterPage() {
                                     className="modern-input pl-12"
                                 />
                             </div>
-                            <div className="relative group/pass">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
-                                <input
-                                    required
-                                    type="password"
-                                    placeholder="Contraseña Segura"
-                                    value={formData.password}
-                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    className="modern-input pl-12"
-                                />
+                            <div className="group/pass">
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within/pass:text-primary transition-colors" />
+                                    <input
+                                        required
+                                        type="password"
+                                        placeholder="Contraseña Segura"
+                                        value={formData.password}
+                                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                        className="modern-input pl-12"
+                                    />
+                                </div>
                                 {/* Password Strength Visualizer */}
                                 <div className="mt-2 flex gap-1 px-1">
                                     {[1, 2, 3, 4].map((step) => {
