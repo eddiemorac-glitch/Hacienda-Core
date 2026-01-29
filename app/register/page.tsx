@@ -37,28 +37,41 @@ export default function RegisterPage() {
         setIsLoading(true);
         setError(null);
 
-        const res = await register({ ...formData, plan: planParam });
+        try {
+            // Add timeout protection (30 seconds)
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("La operación tardó demasiado. Por favor intente de nuevo.")), 30000)
+            );
 
-        if (res.success) {
-            // Auto login after registration
-            const loginRes = await signIn("credentials", {
-                email: formData.email,
-                password: formData.password,
-                redirect: false
-            });
+            const registerPromise = register({ ...formData, plan: planParam });
+            const res = await Promise.race([registerPromise, timeoutPromise]) as any;
 
-            if (loginRes?.ok) {
-                // If a paid plan was selected, go to manual SINPE checkout
-                if (planParam && planParam !== 'STARTER') {
-                    router.push(`/dashboard/billing/checkout?plan=${planParam}`);
-                    return;
+            if (res?.success) {
+                // Auto login after registration
+                const loginRes = await signIn("credentials", {
+                    email: formData.email,
+                    password: formData.password,
+                    redirect: false
+                });
+
+                if (loginRes?.ok) {
+                    // If a paid plan was selected, go to manual SINPE checkout
+                    if (planParam && planParam !== 'STARTER') {
+                        router.push(`/dashboard/billing/checkout?plan=${planParam}`);
+                        return;
+                    }
+                    router.push("/dashboard");
+                } else {
+                    // Registration succeeded but auto-login failed, redirect to login
+                    router.push("/login?registered=true");
                 }
-                router.push("/dashboard");
             } else {
-                router.push("/login");
+                setError(res?.error || "Error desconocido durante el registro.");
             }
-        } else {
-            setError(res.error);
+        } catch (err: any) {
+            console.error("Registration error:", err);
+            setError(err.message || "Error de conexión. Por favor intente de nuevo.");
+        } finally {
             setIsLoading(false);
         }
     };

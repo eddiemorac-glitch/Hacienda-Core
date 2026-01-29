@@ -20,20 +20,27 @@ const RegisterSchema = z.object({
 });
 
 export async function register(data: any) {
+    console.log('[REGISTER] Starting registration process...');
     try {
         const validated = RegisterSchema.parse(data);
+        console.log('[REGISTER] Validation passed for:', validated.email);
         const { email, password, name, orgName, cedula, plan } = validated;
 
+        console.log('[REGISTER] Checking existing user...');
         const existingUser = await prisma.user.findFirst({
             where: { email: { equals: email, mode: 'insensitive' } }
         });
         if (existingUser) throw new Error("El correo ya está registrado.");
 
+        console.log('[REGISTER] Checking existing org...');
         const existingOrg = await prisma.organization.findUnique({ where: { cedula } });
         if (existingOrg) throw new Error("La cédula jurídica ya está registrada.");
 
-        const hashedPassword = await bcrypt.hash(password, 12);
+        console.log('[REGISTER] Hashing password...');
+        const hashedPassword = await bcrypt.hash(password, 10); // Reduced from 12 to 10 for serverless speed
+        console.log('[REGISTER] Password hashed successfully');
 
+        console.log('[REGISTER] Starting database transaction...');
         const result = await prisma.$transaction(async (tx) => {
             const org = await tx.organization.create({
                 data: {
@@ -42,6 +49,7 @@ export async function register(data: any) {
                     plan: plan || "STARTER"
                 }
             });
+            console.log('[REGISTER] Organization created:', org.id);
 
             const user = await tx.user.create({
                 data: {
@@ -51,26 +59,18 @@ export async function register(data: any) {
                     orgId: org.id
                 }
             });
+            console.log('[REGISTER] User created:', user.id);
 
             return { user, org };
         });
+        console.log('[REGISTER] Transaction completed successfully');
 
-        // Dynamic import for audit to avoid circular deps
-        try {
-            const { AuditService } = await import("@/lib/security/audit");
-            await AuditService.log({
-                orgId: result.org.id,
-                userId: result.user.id,
-                action: 'AUTH_REGISTER',
-                details: { plan: result.org.plan, email: result.user.email }
-            });
-        } catch (auditError) {
-            console.warn("Audit log failed during registration:", auditError);
-        }
-
+        // Skip audit log to speed up registration - it's not critical
+        // The audit was causing delays due to dynamic import
+        console.log('[REGISTER] Registration complete, returning success');
         return { success: true, userId: result.user.id, plan: result.org.plan };
     } catch (e: any) {
-        console.error("Registration Error:", e);
-        return { success: false, error: e.message };
+        console.error("[REGISTER] Registration Error:", e.message || e);
+        return { success: false, error: e.message || 'Error desconocido durante el registro.' };
     }
 }
