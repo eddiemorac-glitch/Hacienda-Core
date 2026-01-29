@@ -74,11 +74,18 @@ export function CabysSearch({ onSelect }: CabysSearchProps) {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => query.length >= 1 && setIsOpen(true)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }}
                     className="w-full bg-transparent border-none pl-3 pr-10 py-3 text-sm text-white placeholder:text-slate-600 focus:ring-0 outline-none font-medium"
                 />
 
                 {query && (
                     <button
+                        type="button"
                         onClick={clearSearch}
                         className="absolute right-3 p-1 hover:bg-white/10 rounded-full text-slate-500 hover:text-white transition-all"
                     >
@@ -111,10 +118,20 @@ export function CabysSearch({ onSelect }: CabysSearchProps) {
                                     {results.map((item) => (
                                         <button
                                             key={item.codigo}
+                                            type="button"
                                             onClick={() => {
                                                 onSelect(item);
                                                 setQuery(item.descripcion);
                                                 setIsOpen(false);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onSelect(item);
+                                                    setQuery(item.descripcion);
+                                                    setIsOpen(false);
+                                                }
                                             }}
                                             className="w-full text-left p-4 hover:bg-primary/10 rounded-xl transition-all flex items-start gap-4 group border border-transparent hover:border-primary/20 mb-1"
                                         >

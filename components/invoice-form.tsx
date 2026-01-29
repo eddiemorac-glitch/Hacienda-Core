@@ -115,6 +115,13 @@ export default function InvoiceForm() {
 
     const handleProcess = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // [ANTI-ACCIDENTAL SUBMIT] Only process if we are in the signature step
+        if (step !== 2) {
+            console.warn("[SENTINEL] Bloqueado intento de envío en Paso 1.");
+            return;
+        }
+
         setIsLoading(true);
         try {
             const formPayload = new FormData();
@@ -176,6 +183,27 @@ export default function InvoiceForm() {
     return (
         <div className="w-full max-w-5xl mx-auto space-y-12 pb-32">
 
+            {/* [SENTINEL SHIELD] Overlay de Bloqueo Absoluto durante Procesamiento */}
+            <AnimatePresence>
+                {isLoading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[999] bg-[#020617]/80 backdrop-blur-md flex items-center justify-center cursor-wait"
+                    >
+                        <div className="flex flex-col items-center gap-6 p-12 bg-slate-900/50 border border-white/10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+                            <div className="w-20 h-20 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(59,130,246,0.2)]" />
+                            <div className="text-center space-y-2 relative">
+                                <h3 className="text-xl font-black italic tracking-tighter text-white uppercase italic">Sentinel Activo</h3>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Transmitiendo Documento...</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Header: Type Selection */}
             <header className="space-y-6">
                 <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
@@ -195,6 +223,7 @@ export default function InvoiceForm() {
                         ].map((t) => (
                             <button
                                 key={t.id}
+                                type="button"
                                 onClick={() => setDocType(t.id as DocType)}
                                 className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${docType === t.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-white'
                                     }`}
@@ -223,15 +252,36 @@ export default function InvoiceForm() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Nombre o Razón Social</label>
-                                        <input required value={clientData.nombre} onChange={e => setClientData({ ...clientData, nombre: e.target.value })} placeholder="Ej: Juan Pérez" className="modern-input" />
+                                        <input
+                                            required
+                                            value={clientData.nombre}
+                                            onChange={e => setClientData({ ...clientData, nombre: e.target.value })}
+                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                            placeholder="Ej: Juan Pérez"
+                                            className="modern-input"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Número de Identificación</label>
-                                        <input required value={clientData.cedula} onChange={e => setClientData({ ...clientData, cedula: e.target.value })} placeholder="1-1111-1111" className="modern-input font-mono" />
+                                        <input
+                                            required
+                                            value={clientData.cedula}
+                                            onChange={e => setClientData({ ...clientData, cedula: e.target.value })}
+                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                            placeholder="1-1111-1111"
+                                            className="modern-input font-mono"
+                                        />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Correo Electrónico</label>
-                                        <input type="email" value={clientData.correo} onChange={e => setClientData({ ...clientData, correo: e.target.value })} placeholder="cliente@correo.com" className="modern-input" />
+                                        <input
+                                            type="email"
+                                            value={clientData.correo}
+                                            onChange={e => setClientData({ ...clientData, correo: e.target.value })}
+                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                            placeholder="cliente@correo.com"
+                                            className="modern-input"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -298,7 +348,11 @@ export default function InvoiceForm() {
                                                         <span className="text-base font-black text-white italic tracking-tighter">¢{redondear(lineTotal).toLocaleString()}</span>
                                                     </div>
                                                     <div className="col-span-2 lg:col-span-1 flex justify-end">
-                                                        <button onClick={() => setLines(lines.filter(x => x.id !== l.id))} className="p-3 text-slate-600 hover:text-red-500 transition-all bg-white/5 rounded-xl hover:bg-red-500/10 active:scale-90">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setLines(lines.filter(x => x.id !== l.id))}
+                                                            className="p-3 text-slate-600 hover:text-red-500 transition-all bg-white/5 rounded-xl hover:bg-red-500/10 active:scale-90"
+                                                        >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
@@ -347,13 +401,17 @@ export default function InvoiceForm() {
                                     <h2 className="text-5xl font-black text-white italic tracking-tighter">¢{totals.total.toLocaleString()}</h2>
                                     <button
                                         type="button"
+                                        disabled={
+                                            (docType !== 'REP' && (lines.length === 0 || lines.some(l => !l.cabys))) ||
+                                            !clientData.cedula ||
+                                            !clientData.nombre ||
+                                            totals.total < 0
+                                        }
                                         onClick={() => {
-                                            if (docType !== 'REP' && lines.every(l => !l.cabys)) return alert("Debe elegir un servicio.");
-                                            if (!clientData.cedula || !clientData.nombre) return alert("Complete los datos del cliente.");
                                             setStep(2);
                                             window.scrollTo({ top: 0, behavior: 'smooth' });
                                         }}
-                                        className="mt-8 w-full bg-white text-primary rounded-2xl py-4 font-black uppercase tracking-widest text-[11px] hover:scale-[1.03] transition-all flex items-center justify-center gap-3"
+                                        className="mt-8 w-full bg-white text-primary rounded-2xl py-4 font-black uppercase tracking-widest text-[11px] hover:scale-[1.03] transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
                                     >
                                         CONTINUAR A FIRMA <ChevronRight className="w-4 h-4" />
                                     </button>
@@ -405,7 +463,13 @@ export default function InvoiceForm() {
                                 </div>
 
                                 <div className="flex gap-4 pt-4 border-t border-white/5">
-                                    <button type="button" onClick={() => setStep(1)} className="flex-1 py-4 text-xs font-bold text-slate-400 hover:text-white transition-all uppercase tracking-widest">Atrás</button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setStep(1)}
+                                        className="flex-1 py-4 text-xs font-bold text-slate-400 hover:text-white transition-all uppercase tracking-widest"
+                                    >
+                                        Atrás
+                                    </button>
                                     <button
                                         type="submit" disabled={isLoading}
                                         className="flex-[2] bg-success text-white py-4 rounded-2xl font-black uppercase text-[11px] transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-success/20 flex items-center justify-center gap-3 disabled:opacity-50"
@@ -442,23 +506,40 @@ export default function InvoiceForm() {
                                             </div>
                                             <div className="flex flex-col sm:flex-row gap-4">
                                                 <button
-                                                    onClick={async () => {
-                                                        if (!result.clave) return;
-                                                        const res = await fetch(`/api/v1/documents/${result.clave}/pdf`);
-                                                        const blob = await res.blob();
-                                                        const url = window.URL.createObjectURL(blob);
-                                                        const a = document.createElement('a');
-                                                        a.href = url;
-                                                        a.download = `Factura-${result.clave.substring(0, 10)}.pdf`;
-                                                        document.body.appendChild(a);
-                                                        a.click();
-                                                        window.URL.revokeObjectURL(url);
+                                                    onClick={async (e: React.MouseEvent<HTMLButtonElement>) => {
+                                                        const btn = e.currentTarget;
+                                                        try {
+                                                            btn.disabled = true;
+                                                            btn.innerHTML = '<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>';
+
+                                                            if (!result.clave) return;
+                                                            const res = await fetch(`/api/v1/documents/${result.clave}/pdf`);
+                                                            if (!res.ok) throw new Error("Error al descargar PDF");
+
+                                                            const blob = await res.blob();
+                                                            const url = window.URL.createObjectURL(blob);
+                                                            const a = document.createElement('a');
+                                                            a.href = url;
+                                                            a.download = `Factura-${result.clave.substring(0, 10)}.pdf`;
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            window.URL.revokeObjectURL(url);
+                                                        } catch (err) {
+                                                            alert("No se pudo generar el PDF. Es posible que el documento aún se esté procesando en Hacienda.");
+                                                        } finally {
+                                                            btn.disabled = false;
+                                                            btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> DESCARGAR PDF';
+                                                        }
                                                     }}
-                                                    className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20"
+                                                    className="flex-1 bg-primary text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
                                                 >
                                                     <Download className="w-5 h-5" /> DESCARGAR PDF
                                                 </button>
-                                                <button onClick={() => window.location.reload()} className="flex-1 bg-white/5 text-white py-4 rounded-2xl font-bold hover:bg-white/10 transition-all border border-white/10">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => window.location.reload()}
+                                                    className="flex-1 bg-white/5 text-white py-4 rounded-2xl font-bold hover:bg-white/10 transition-all border border-white/10"
+                                                >
                                                     NUEVA FACTURA
                                                 </button>
                                             </div>
@@ -466,7 +547,11 @@ export default function InvoiceForm() {
                                     )}
 
                                     {!result.clave && (
-                                        <button onClick={() => setResult(null)} className="px-12 py-4 bg-white/5 text-white rounded-2xl font-bold hover:bg-white/10 transition-all border border-white/10">
+                                        <button
+                                            type="button"
+                                            onClick={() => setResult(null)}
+                                            className="px-12 py-4 bg-white/5 text-white rounded-2xl font-bold hover:bg-white/10 transition-all border border-white/10"
+                                        >
                                             VOLVER A INTENTAR
                                         </button>
                                     )}

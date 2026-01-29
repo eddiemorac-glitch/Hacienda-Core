@@ -107,6 +107,9 @@ export async function processDocument(
  * [CORE ENGINE] - Stateless Document Workflow
  * Can be called by UI (processDocument) or Public API.
  */
+// [ANTI-DUPLICATE CACHE] Prevents race conditions or double clicks producing duplicate invoices
+const recentInvoices = new Set<string>();
+
 export async function executeDocumentWorkflow({
     orgId,
     docData,
@@ -125,6 +128,33 @@ export async function executeDocumentWorkflow({
     }
 }): Promise<DocumentState> {
     try {
+        // [INTEGRITY CHECK] Validate common structure
+        if (!docData.emisor?.numeroIdentificacion) {
+            throw new Error("Estructura inválida: El emisor no tiene identificación.");
+        }
+
+        const totalComprobante = (docData as any).resumen?.totalComprobante || (docData as any).montoPago || 0;
+        if (totalComprobante <= 0) {
+            throw new Error(`Integridad fallida: El monto total (${totalComprobante}) debe ser mayor a cero.`);
+        }
+
+        if (type !== 'REP' && (!(docData as any).detalles || (docData as any).detalles.length === 0)) {
+            throw new Error("Integridad fallida: El documento debe tener al menos una línea de detalle.");
+        }
+
+        if (!docData.receptor?.numeroIdentificacion || !docData.receptor?.nombre) {
+            throw new Error("Integridad fallida: Debe completar los datos del receptor (Nombre y Cédula).");
+        }
+
+        // [ANTI-ACCIDENTAL DUPLICATION]
+        const submissionKey = `${orgId}-${totalComprobante}-${docData.receptor.numeroIdentificacion}`;
+        if (recentInvoices.has(submissionKey)) {
+            console.warn(`[SENTINEL] Bloqueado intento de duplicación para Org: ${orgId}`);
+            throw new Error("Ya se está procesando un documento idéntico. Por favor espere 10 segundos.");
+        }
+        recentInvoices.add(submissionKey);
+        setTimeout(() => recentInvoices.delete(submissionKey), 10000); // 10s cooldown
+
         console.log(`[FORGE] Ejecutando workflow para documento tipo: ${type} (Org: ${orgId})...`);
 
         const isSimulator = process.env.HACIENDA_ENV === 'simulator';
