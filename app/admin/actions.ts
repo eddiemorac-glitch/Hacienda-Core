@@ -75,3 +75,26 @@ export async function getAllOrganizations() {
         }
     });
 }
+
+export async function updateOrganizationPlan(orgId: string, plan: string) {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== 'ADMIN') {
+        throw new Error("No autorizado");
+    }
+
+    const updated = await prisma.organization.update({
+        where: { id: orgId },
+        data: { plan }
+    });
+
+    // Auditoría
+    const { AuditService } = await import("@/lib/security/audit");
+    await AuditService.log({
+        orgId: "ADMIN_CONSOLE",
+        userId: (session.user as any).id,
+        action: 'SUBSCRIPTION_CHANGE',
+        details: { targetOrgId: orgId, newPlan: plan }
+    });
+
+    return { success: true };
+}

@@ -8,7 +8,7 @@ import {
     Clock, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
-import { getAllOrganizations } from "../actions";
+import { getAllOrganizations, updateOrganizationPlan } from "../actions";
 
 /**
  * [SENTINEL - ORGANIZATIONS MASTER LIST]
@@ -19,6 +19,7 @@ export default function AdminOrgsPage() {
     const [orgs, setOrgs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [updating, setUpdating] = useState<string | null>(null);
 
     const loadOrgs = async () => {
         setLoading(true);
@@ -40,6 +41,18 @@ export default function AdminOrgsPage() {
         org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         org.cedula.includes(searchTerm)
     );
+
+    const handlePlanChange = async (orgId: string, newPlan: string) => {
+        setUpdating(orgId);
+        try {
+            await updateOrganizationPlan(orgId, newPlan);
+            await loadOrgs();
+        } catch (e: any) {
+            alert(e.message);
+        } finally {
+            setUpdating(null);
+        }
+    };
 
     if (loading) return (
         <div className="min-h-screen bg-[#020617] flex items-center justify-center">
@@ -109,8 +122,8 @@ export default function AdminOrgsPage() {
                                     <td className="p-6">
                                         <div className="flex flex-col gap-1">
                                             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md inline-block w-fit ${org.plan === 'ENTERPRISE' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
-                                                    org.plan === 'BUSINESS' ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' :
-                                                        'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                                                org.plan === 'BUSINESS' ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' :
+                                                    'bg-slate-500/10 text-slate-500 border border-slate-500/20'
                                                 }`}>
                                                 {org.plan}
                                             </span>
@@ -128,9 +141,21 @@ export default function AdminOrgsPage() {
                                         </span>
                                     </td>
                                     <td className="p-6 text-right">
-                                        <button className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-                                            <MoreHorizontal className="w-5 h-5 text-slate-600" />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <select
+                                                className="bg-white/5 border border-white/5 rounded-lg text-[9px] font-black uppercase px-2 py-1 outline-none hover:border-primary transition-all disabled:opacity-50"
+                                                value={org.plan}
+                                                disabled={updating === org.id}
+                                                onChange={(e) => handlePlanChange(org.id, e.target.value)}
+                                            >
+                                                <option value="STARTER">Starter</option>
+                                                <option value="BUSINESS">Business</option>
+                                                <option value="ENTERPRISE">Enterprise</option>
+                                            </select>
+                                            <button className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                                                <MoreHorizontal className="w-5 h-5 text-slate-600" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
