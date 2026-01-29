@@ -31,6 +31,10 @@ export async function runGhostInvoices(isLocalBypass = false) {
     // p12 will be fetched from DB via processDocument logic
 
     const docData = {
+        // Campos requeridos por TypeScript (se generan en runtime)
+        claveStr: "",
+        consecutivoStr: "",
+        fechaEmision: new Date(),
         emisor: { nombre: "QA TEST TERMINATOR", tipoIdentificacion: "01", numeroIdentificacion: "3101000000", correo: "qa@sentinel.com" },
         receptor: { nombre: "GHOST CLIENT", tipoIdentificacion: "01", numeroIdentificacion: "111111111", correo: "ghost@client.com" },
         condicionVenta: "01",
@@ -56,7 +60,13 @@ export async function runGhostInvoices(isLocalBypass = false) {
             totalVentaNeta: 1,
             totalGravado: 1,
             totalExento: 0,
-            totalExonerado: 0
+            totalExonerado: 0,
+            totalServiciosGravados: 0,
+            totalServiciosExentos: 0,
+            totalServiciosExonerados: 0,
+            totalMercanciasGravadas: 1,
+            totalMercanciasExentas: 0,
+            totalMercanciasExoneradas: 0
         }
     };
 
