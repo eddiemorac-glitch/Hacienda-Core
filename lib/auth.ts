@@ -41,6 +41,13 @@ export const authOptions: NextAuthOptions = {
 
                 if (!user) {
                     console.log(`[AUTH_DEBUG] User not found: ${email}`);
+                    // [SECURITY] Audit log for failed attempt
+                    const { AuditService } = await import("@/lib/security/audit");
+                    await AuditService.log({
+                        orgId: "SYSTEM",
+                        action: 'AUTH_LOGIN',
+                        details: { status: 'FAILED_USER_NOT_FOUND', email }
+                    });
                     throw new Error("Usuario no encontrado");
                 }
 
@@ -50,10 +57,26 @@ export const authOptions: NextAuthOptions = {
 
                 if (!isValid) {
                     console.log(`[AUTH_DEBUG] Invalid password for: ${email}`);
+                    // [SECURITY] Audit log for failed attempt
+                    const { AuditService } = await import("@/lib/security/audit");
+                    await AuditService.log({
+                        orgId: user.orgId || "SYSTEM",
+                        userId: user.id,
+                        action: 'AUTH_LOGIN',
+                        details: { status: 'FAILED_INVALID_PASS', email }
+                    });
                     throw new Error("Contraseña incorrecta");
                 }
 
                 console.log(`[AUTH_DEBUG] Login successful for: ${email}`);
+                // [SECURITY] Optional: log success
+                const { AuditService } = await import("@/lib/security/audit");
+                await AuditService.log({
+                    orgId: user.orgId || "SYSTEM",
+                    userId: user.id,
+                    action: 'AUTH_LOGIN',
+                    details: { status: 'SUCCESS' }
+                });
                 return {
                     id: user.id,
                     email: user.email,

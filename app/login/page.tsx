@@ -58,8 +58,8 @@ export default function LoginPage() {
             >
                 <div className="flex flex-col items-center text-center mb-10">
                     <Link href="/" className="mb-6">
-                        <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center border border-primary/30">
-                            <Shield className="w-6 h-6 text-primary" />
+                        <div className="w-16 h-16 flex items-center justify-center p-2">
+                            <img src="/logo-hacienda-core.svg" alt="HaciendaCore Logo" className="w-full h-full" />
                         </div>
                     </Link>
                     <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Bienvenido</h1>

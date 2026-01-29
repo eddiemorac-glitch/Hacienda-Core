@@ -13,6 +13,18 @@ import { authOptions } from "@/lib/auth";
 import { PLANS } from "@/lib/stripe-config";
 import { WebhookService } from '@/lib/hacienda/webhook-service';
 import { getNextSequence, formatSequence } from '@/lib/hacienda/sequence-service';
+import { z } from 'zod';
+import { AuditService } from '@/lib/security/audit';
+
+// [ZOD SHIELD] Validation Schemas
+const RegisterSchema = z.object({
+    email: z.string().email("Correo electrónico inválido"),
+    password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+    name: z.string().min(3, "Nombre muy corto"),
+    orgName: z.string().min(3, "Nombre de organización muy corto"),
+    cedula: z.string().regex(/^\d{9,12}$/, "La cédula debe tener entre 9 y 12 dígitos numéricos"),
+    plan: z.string().optional()
+});
 
 /**
  * [NOVA PROTOCOL] - Central Hub for Document Processing
@@ -384,7 +396,16 @@ export async function checkInvoiceStatus(invoiceId: string, credentials: { user:
 
         if (!invoice) throw new Error('Documento no encontrado o no pertenece a su organización');
 
-        const client = new HaciendaClient({ username: credentials.user, password: credentials.pass, environment: 'staging' });
+        const org = await prisma.organization.findUnique({
+            where: { id: orgId },
+            select: { haciendaEnv: true }
+        });
+
+        const client = new HaciendaClient({
+            username: credentials.user,
+            password: credentials.pass,
+            environment: (org?.haciendaEnv as any) || 'staging'
+        });
         const tokenData = await client.getToken();
         const statusResponse = await client.getStatus(invoice.clave, tokenData.access_token);
         const nuevoEstado = (statusResponse['ind-estado'] || 'procesando').toUpperCase();
@@ -407,10 +428,15 @@ export async function syncContingencyQueue(credentials: { user: string, pass: st
         const orgId = (session.user as any).orgId;
 
         const { ContingenciaService } = await import('@/lib/hacienda/contingencia');
+        const org = await prisma.organization.findUnique({
+            where: { id: orgId },
+            select: { haciendaEnv: true }
+        });
+
         const client = new HaciendaClient({
             username: credentials.user,
             password: credentials.pass,
-            environment: 'staging'
+            environment: (org?.haciendaEnv as any) || 'staging'
         });
 
         await ContingenciaService.procesarCola(orgId, async (xml: string, clave: string) => {
@@ -437,16 +463,12 @@ export async function syncContingencyQueue(credentials: { user: string, pass: st
 
 // Hacienda Health - DELEGATED TO DASHBOARD/ACTIONS/STATS
 
-export async function register(data: {
-    email: string,
-    password: string,
-    name: string,
-    orgName: string,
-    cedula: string,
-    plan?: string
-}) {
+export async function register(data: any) {
     try {
-        const { email, password, name, orgName, cedula, plan } = data;
+        // 1. Zod Validation
+        const validated = RegisterSchema.parse(data);
+        const { email, password, name, orgName, cedula, plan } = validated;
+
         console.log(`[REGISTRATION_DEBUG] Starting registration for: ${email}`);
 
         // Validar si el usuario ya existe (insensible)
@@ -479,6 +501,14 @@ export async function register(data: {
                     password: hashedPassword,
                     orgId: org.id
                 }
+            });
+
+            // [SECURITY] Audit Log Registration
+            await AuditService.log({
+                orgId: org.id,
+                userId: user.id,
+                action: 'AUTH_REGISTER',
+                details: { plan: org.plan }
             });
 
             return { user, org };
