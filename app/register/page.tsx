@@ -110,24 +110,24 @@ export default function RegisterPage() {
                         {/* Org Info */}
                         <div className="space-y-4">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Información de la Empresa</h3>
-                            <div className="relative">
-                                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="nova-input-group">
+                                <Building2 className="nova-input-icon w-4 h-4" />
                                 <input
                                     required
                                     placeholder="Nombre de la Empresa"
                                     value={formData.orgName}
                                     onChange={e => setFormData({ ...formData, orgName: e.target.value })}
-                                    className="modern-input pl-12"
+                                    className="nova-input"
                                 />
                             </div>
-                            <div className="relative">
-                                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="nova-input-group">
+                                <CreditCard className="nova-input-icon w-4 h-4" />
                                 <input
                                     required
                                     placeholder="Cédula Jurídica / Física"
                                     value={formData.cedula}
                                     onChange={e => setFormData({ ...formData, cedula: e.target.value })}
-                                    className="modern-input pl-12"
+                                    className="nova-input"
                                 />
                             </div>
                         </div>
@@ -135,36 +135,36 @@ export default function RegisterPage() {
                         {/* User Info */}
                         <div className="space-y-4">
                             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Cuenta de Administrador</h3>
-                            <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="nova-input-group">
+                                <User className="nova-input-icon w-4 h-4" />
                                 <input
                                     required
                                     placeholder="Nombre Completo"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="modern-input pl-12"
+                                    className="nova-input"
                                 />
                             </div>
-                            <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="nova-input-group">
+                                <Mail className="nova-input-icon w-4 h-4" />
                                 <input
                                     required
                                     type="email"
                                     placeholder="correo@ejemplo.com"
                                     value={formData.email}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="modern-input pl-12"
+                                    className="nova-input"
                                 />
                             </div>
-                            <div className="relative">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                            <div className="nova-input-group">
+                                <Lock className="nova-input-icon w-4 h-4" />
                                 <input
                                     required
                                     type="password"
                                     placeholder="Contraseña Segura"
                                     value={formData.password}
                                     onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                    className="modern-input pl-12"
+                                    className="nova-input"
                                 />
                             </div>
                             {/* Password Strength Visualizer */}

@@ -8,6 +8,7 @@ import { DocumentService, DocumentState } from '@/lib/hacienda/document-service'
 import { FacturaData, RepData } from '@/lib/types/factura';
 import { HaciendaClient } from '@/lib/hacienda/api-client';
 import { WebhookService } from '@/lib/hacienda/webhook-service';
+import { decrypt } from '@/lib/security/crypto';
 
 /**
  * [WEB UI WRAPPERS] - Server Actions for the Frontend
@@ -21,7 +22,8 @@ export async function processDocument(
 ): Promise<DocumentState> {
     try {
         const session = await getServerSession(getAuthOptions());
-        const orgIdFromSession = session?.user?.orgId;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const orgIdFromSession = (session?.user as any)?.orgId;
 
         const isSimulator = process.env.HACIENDA_ENV === 'simulator';
         const orgId = orgIdFromSession || (isSimulator ? (await prisma.organization.findFirst())?.id : null);
@@ -154,6 +156,87 @@ export async function syncContingencyQueue(credentials: { user: string, pass: st
         return { success: true };
     } catch (e: any) {
         console.error("Sync Error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function verifyHaciendaStatus(invoiceId: string) {
+    try {
+        const session = await getServerSession(getAuthOptions());
+        if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
+        const orgId = (session.user as any).orgId;
+
+        // Verification of ownership
+        const invoice = await prisma.invoice.findFirst({
+            where: { id: invoiceId, orgId: orgId }
+        });
+
+        if (!invoice) throw new Error("Comprobante no encontrado o acceso denegado.");
+
+        const result = await DocumentService.syncStatus(invoiceId);
+
+        return {
+            success: result.status !== 'error',
+            status: result.status,
+            message: result.message,
+            haciendaResponse: result.haciendaResponse
+        };
+    } catch (e: any) {
+        console.error("verifyHaciendaStatus Error:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+export async function queryHaciendaStatusByClave(clave: string) {
+    try {
+        const session = await getServerSession(getAuthOptions());
+        if (!session || !(session.user as any).orgId) throw new Error("No autenticado");
+        const orgId = (session.user as any).orgId;
+
+        const org = await prisma.organization.findUnique({
+            where: { id: orgId },
+            select: {
+                haciendaUser: true,
+                haciendaPass: true,
+                haciendaEnv: true
+            }
+        });
+
+        const isGlobalSimulator = process.env.HACIENDA_ENV === 'simulator';
+        const isOrgSimulator = org?.haciendaEnv === 'simulator';
+        const isProduction = org?.haciendaEnv === 'production' || process.env.HACIENDA_ENV === 'production';
+
+        // [SURGICAL BYPASS] Si no hay credenciales y no es producción, asumimos Simulador/Test
+        const missingCreds = !org?.haciendaUser || !org?.haciendaPass;
+        const forceSimulator = (missingCreds && !isProduction) || isGlobalSimulator || isOrgSimulator;
+
+        if (!forceSimulator && missingCreds) {
+            throw new Error("Credenciales de Hacienda no configuradas (Producción detected).");
+        }
+
+        const finalEnv = forceSimulator ? 'simulator' : (org?.haciendaEnv || 'staging');
+        let username = org?.haciendaUser || "cpf-01-0000";
+        let password = org?.haciendaPass || "mock_pass";
+
+        try {
+            if (org?.haciendaPass) password = decrypt(org.haciendaPass);
+        } catch (e) {
+            if (!forceSimulator) throw e;
+            password = "mock_pass";
+        }
+
+        const client = new HaciendaClient({
+            username,
+            password,
+            environment: finalEnv as any
+        });
+
+        const token = await client.getToken();
+        const status = await client.getStatus(clave, token.access_token);
+
+        return { success: true, status };
+    } catch (e: any) {
+        console.error("Status Query Error:", e);
         return { success: false, error: e.message };
     }
 }

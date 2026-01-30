@@ -7,6 +7,8 @@ import { getAuthOptions } from "@/lib/auth-options";
 import { processDocument } from "@/app/actions";
 import { DocumentState } from "@/lib/hacienda/document-service";
 import { setMockMode } from "@/lib/testing/hacienda-simulator";
+import { HaciendaClient } from "@/lib/hacienda/api-client";
+import { decrypt } from "@/lib/security/crypto";
 
 export async function toggleSimulator(online: boolean) {
     if (online) {
@@ -33,53 +35,103 @@ export async function runGhostInvoices(isLocalBypass = false) {
     // p12 will be fetched from DB via processDocument logic
 
     const docData = {
-        // Campos requeridos por TypeScript (se generan en runtime)
         claveStr: "",
         consecutivoStr: "",
         fechaEmision: new Date(),
-        emisor: { nombre: "QA TEST TERMINATOR", tipoIdentificacion: "01", numeroIdentificacion: "3101000000", correo: "qa@sentinel.com" },
-        receptor: { nombre: "GHOST CLIENT", tipoIdentificacion: "01", numeroIdentificacion: "111111111", correo: "ghost@client.com" },
+        codigoActividad: "721001", // v4.4 Top level
+        emisor: { nombre: "QA TEST TERMINATOR", tipoIdentificacion: "01", numeroIdentificacion: "3101000000", codigoActividad: "721001", correo: "qa@sentinel.com" },
+        receptor: { nombre: "GHOST CLIENT", tipoIdentificacion: "01", numeroIdentificacion: "111111111", codigoActividad: "721001", correo: "ghost@client.com" },
         condicionVenta: "01",
-        medioPago: ["01"],
+        medioPago: ["05"], // SINPE Móvil v4.4
         detalles: [{
             numeroLinea: 1,
             codigoCabys: "8314100000000",
             cantidad: 1,
             unidadMedida: "Unid",
-            detalle: "QA Stress Test",
-            precioUnitario: 1,
-            montoTotal: 1,
-            subTotal: 1,
-            montoTotalLinea: 1.13,
-            impuesto: { codigo: "01", codigoTarifa: "08", tarifa: 13, monto: 0.13 }
+            detalle: "QA v4.4 Stress Test",
+            precioUnitario: 1000,
+            montoTotal: 1000,
+            descuento: {
+                monto: 100,
+                naturaleza: "06" // Descuento por fidelidad v4.4
+            },
+            subTotal: 900,
+            montoTotalLinea: 1017,
+            impuesto: { codigo: "01", codigoTarifa: "08", tarifa: 13, monto: 117 }
         }],
         resumen: {
             codigoMoneda: "CRC",
-            totalVenta: 1,
-            totalImpuesto: 0.13,
-            totalComprobante: 1.13,
-            totalDescuentos: 0,
-            totalVentaNeta: 1,
-            totalGravado: 1,
+            totalVenta: 1000,
+            totalImpuesto: 117,
+            totalComprobante: 1017,
+            totalDescuentos: 100,
+            totalVentaNeta: 900,
+            totalGravado: 900,
             totalExento: 0,
-            totalExonerado: 0,
+            totalExonerated: 0,
             totalServiciosGravados: 0,
             totalServiciosExentos: 0,
             totalServiciosExonerados: 0,
-            totalMercanciasGravadas: 1,
+            totalMercanciasGravadas: 900,
             totalMercanciasExentas: 0,
             totalMercanciasExoneradas: 0
         }
     };
 
-    const results: DocumentState[] = [];
-
-    // Parallel stress test (3 invoices)
-    const tasks = [
-        processDocument(formData, docData, 'FE'),
-        processDocument(formData, docData, 'FE'),
-        processDocument(formData, docData, 'FE')
-    ];
+    // Stress test: 5 documents in parallel
+    // This MUST trigger the Mutex for at least 4 of them since docData is identical.
+    const tasks = Array(5).fill(null).map(() => processDocument(formData, docData as any, 'FE'));
 
     return await Promise.all(tasks);
+}
+
+export async function getLastInvoiceClave() {
+    const session = await getServerSession(getAuthOptions());
+    if (!session || !(session.user as any).orgId) throw new Error("Unauthorized");
+    const orgId = (session.user as any).orgId;
+
+    const lastInvoice = await prisma.invoice.findFirst({
+        where: { orgId },
+        orderBy: { createdAt: 'desc' },
+        select: { clave: true }
+    });
+
+    return lastInvoice?.clave || null;
+}
+
+export async function queryHaciendaStatus(clave: string) {
+    try {
+        const session = await getServerSession(getAuthOptions());
+        if (!session || !(session.user as any).orgId) throw new Error("Unauthorized");
+        const orgId = (session.user as any).orgId;
+
+        const org = await prisma.organization.findUnique({
+            where: { id: orgId },
+            select: {
+                haciendaUser: true,
+                haciendaPass: true,
+                haciendaEnv: true
+            }
+        });
+
+        if (!org?.haciendaUser || !org?.haciendaPass) {
+            throw new Error("Credenciales de Hacienda no configuradas en la organización.");
+        }
+
+        const password = decrypt(org.haciendaPass);
+
+        const client = new HaciendaClient({
+            username: org.haciendaUser,
+            password: password,
+            environment: (org.haciendaEnv as any) || 'staging'
+        });
+
+        const token = await client.getToken();
+        const status = await client.getStatus(clave, token.access_token);
+
+        return { success: true, status };
+    } catch (e: any) {
+        console.error("QA Status Query Error:", e);
+        return { success: false, error: e.message };
+    }
 }

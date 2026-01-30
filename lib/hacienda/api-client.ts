@@ -39,9 +39,20 @@ export class HaciendaClient {
      * [CRYPTO SHIELD] Implementa Mutex para evitar race conditions concurrentes.
      */
     async getToken(): Promise<TokenResponse> {
+        // [SIMULATOR BYPASS] Return direct mock if in simulator mode
+        if (this.config.environment === 'simulator') {
+            console.log(`[SWARM] Internal Simulator Auth Bypass for: ${this.config.username}`);
+            return {
+                access_token: 'mock_token_' + Date.now(),
+                refresh_token: 'mock_refresh_' + Date.now(),
+                expires_in: 3600,
+                refresh_expires_in: 7200
+            };
+        }
+
         // 1. Check Cache First
         const cached = TokenCache.get(this.config.username);
-        if (cached && this.config.environment !== 'simulator') {
+        if (cached) {
             return { access_token: cached, refresh_token: '', expires_in: 0, refresh_expires_in: 0 };
         }
 
@@ -159,6 +170,12 @@ export class HaciendaClient {
             comprobanteXml: Buffer.from(xmlSigned).toString('base64')
         };
 
+        // [SIMULATOR BYPASS]
+        if (this.config.environment === 'simulator') {
+            console.log(`[SIM] Internal Bypass Invoice: ${clave}`);
+            return { status: 'enviado', location: `https://api-sandbox.comprobanteselectronicos.go.cr/recepcion/v1/recepcion/${clave}` };
+        }
+
         try {
             const res = await fetch(`${baseUrl}/recepcion`, {
                 method: 'POST',
@@ -196,6 +213,17 @@ export class HaciendaClient {
      * @param token Access Token válido
      */
     async getStatus(clave: string, token: string) {
+        // [SIMULATOR BYPASS]
+        if (this.config.environment === 'simulator') {
+            console.log(`[SIM] Internal Bypass Status Check: ${clave}`);
+            return {
+                clave,
+                fecha: new Date().toISOString(),
+                'ind-estado': 'aceptado',
+                'respuesta-xml': 'PG1vY2s+UmVzcHVlc3RhPC9tb2NrPg=='
+            };
+        }
+
         const baseUrl = HaciendaClient.API_URLS[this.config.environment];
 
         try {

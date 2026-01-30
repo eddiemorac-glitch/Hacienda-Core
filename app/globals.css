@@ -1,81 +1,119 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: hsl(222 47% 1%);
-  --color-foreground: hsl(210 40% 98%);
-  --color-primary: hsl(217.2 91.2% 59.8%);
-  --color-secondary: hsl(217.2 32.6% 17.5%);
+  /* Nova UI v2 - Hyper-Premium HSL Palette */
+  --color-background: hsl(224 71% 4%);
+  --color-foreground: hsl(213 31% 91%);
+  
+  --color-primary: hsl(229 84% 63%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+
+  --color-accent: hsl(229 84% 63%);
+  --color-accent-foreground: hsl(210 40% 98%);
+  
+  --color-destructive: hsl(0 84.2% 60.2%);
+  --color-destructive-foreground: hsl(210 40% 98%);
+
+  --color-success: hsl(150 100% 39%);
+  --color-success-foreground: hsl(210 40% 98%);
+
   --color-muted: hsl(217.2 32.6% 17.5%);
-  --color-accent: hsl(217.2 32.6% 17.5%);
-  --color-success: hsl(142 70% 45%);
+  --color-muted-foreground: hsl(215 20.2% 65.1%);
+
+  --color-card: hsl(222.2 84% 4.9%);
+  --color-card-foreground: hsl(210 40% 98%);
+  
+  --color-popover: hsl(222.2 84% 4.9%);
+  --color-popover-foreground: hsl(210 40% 98%);
+  
+  --color-border: hsl(217.2 32.6% 17.5%);
+  --color-input: hsl(217.2 32.6% 17.5%);
+  --color-ring: hsl(224.3 76.3% 48%);
 }
 
 @layer base {
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/30;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: 
+      radial-gradient(circle at 50% 0%, hsl(229 84% 63% / 0.15), transparent 60%),
+      radial-gradient(circle at 80% 10%, hsl(280 84% 63% / 0.1), transparent 50%),
+      linear-gradient(to bottom, transparent, hsl(224 71% 4%));
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-white/5 shadow-2xl;
+  /* Sentinel v2 Glassmorphism - The 'Diamond' Standard */
+  .premium-glass {
+    @apply bg-white/[0.02] backdrop-blur-2xl border border-white/[0.05] shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
   }
 
   .premium-card {
-    @apply bg-[#030712] border border-white/5 rounded-[2rem] shadow-2xl transition-all duration-500;
+    @apply bg-white/[0.03] border border-white/[0.08] rounded-2xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:bg-white/[0.04] hover:scale-[1.01] hover:border-primary/20;
   }
 
-  .modern-input {
-    @apply w-full bg-white/[0.03] border border-white/[0.05] rounded-xl px-4 py-3 text-sm outline-none transition-all duration-300;
+  /* The Math-Isolated Input Container */
+  .nova-input-group {
+    @apply relative flex items-center w-full transition-all duration-300;
   }
 
-  .modern-input:focus {
-    @apply border-primary/50 bg-white/[0.05] ring-4 ring-primary/10 shadow-lg;
+  .nova-input-icon {
+    @apply absolute left-4 z-10 text-slate-400 transition-colors duration-300;
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-white/40;
+  .nova-input {
+    @apply w-full bg-slate-950/50 border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-sm text-slate-200 
+    placeholder:text-slate-500 outline-none transition-all duration-300
+    focus:border-primary/50 focus:bg-slate-900/80 focus:ring-2 focus:ring-primary/20 focus:shadow-[0_0_20px_rgba(99,102,241,0.15)];
+  }
+
+  /* Typography Enhancements */
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600;
+  }
+
+  .text-gradient-hero {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-slate-400;
   }
 
   .text-gradient-primary {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400;
-  }
-
-  .glow-primary {
-    @apply shadow-2xl;
-  }
-
-  .nav-blur {
-    @apply backdrop-blur-md bg-background/80 border-b border-white/5;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400;
   }
 }
 
-/* Custom Scrollbar for Nova UI */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  @apply bg-slate-950;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
 }
 
+/* Animations */
 @keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
 }

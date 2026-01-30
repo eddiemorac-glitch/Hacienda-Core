@@ -74,26 +74,26 @@ export default function LoginPage() {
                     )}
 
                     <div className="space-y-4">
-                        <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <div className="nova-input-group">
+                            <Mail className="nova-input-icon w-4 h-4" />
                             <input
                                 required
                                 type="email"
                                 placeholder="Correo Electrónico"
                                 value={formData.email}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                className="modern-input pl-12"
+                                className="nova-input"
                             />
                         </div>
-                        <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <div className="nova-input-group">
+                            <Lock className="nova-input-icon w-4 h-4" />
                             <input
                                 required
                                 type="password"
                                 placeholder="Contraseña"
                                 value={formData.password}
                                 onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                className="modern-input pl-12"
+                                className="nova-input"
                             />
                         </div>
                     </div>

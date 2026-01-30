@@ -46,7 +46,9 @@ export async function register(data: any) {
                 data: {
                     name: orgName,
                     cedula: cedula,
-                    plan: plan || "STARTER"
+                    plan: plan || "STARTER",
+                    subscriptionStatus: "active",
+                    subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // [PHASE 9] 30 days of trial
                 }
             });
             console.log('[REGISTER] Organization created:', org.id);

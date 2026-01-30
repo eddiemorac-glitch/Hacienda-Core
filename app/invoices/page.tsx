@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from 'next/link';
-import { ArrowLeft, FileText, CheckCircle, XCircle, AlertTriangle, Eye, Download, RefreshCw } from "lucide-react";
-import { getLatestInvoices } from "@/app/dashboard/actions/stats"; // Centralizado en dashboard/actions/stats
+import { ArrowLeft, FileText, CheckCircle, XCircle, AlertTriangle, Eye, Download, RefreshCw, Loader2 } from "lucide-react";
+import { getLatestInvoices } from "@/app/dashboard/actions/stats";
+import { verifyHaciendaStatus } from "@/app/actions";
 
 // Para el historial completo, idealmente haríamos una action con paginación real.
 // Por ahora reusaremos getLatestInvoices pero con un limite mayor si fuera necesario,
@@ -18,6 +19,7 @@ export default function InvoicesPage() {
     // Simularemos el fetch aqui
     const [invoices, setInvoices] = useState<any[]>([]);
     const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         getLatestInvoices().then(setInvoices);
@@ -139,23 +141,30 @@ export default function InvoicesPage() {
                                         Ver XML
                                     </button>
                                     <button
+                                        disabled={isSyncing}
                                         onClick={async () => {
-                                            const user = prompt("Hacienda User:");
-                                            const pass = prompt("Hacienda Pass:");
-                                            if (user && pass) {
-                                                const { checkInvoiceStatus } = await import("@/app/actions");
-                                                const res = await checkInvoiceStatus(selectedInvoice.id, { user, pass });
+                                            setIsSyncing(true);
+                                            try {
+                                                const res = await verifyHaciendaStatus(selectedInvoice.id);
                                                 if (res.success) {
-                                                    alert(`Estado actualizado: ${res.status}`);
-                                                    location.reload();
+                                                    const nuevoEstado = res.haciendaResponse?.['ind-estado']?.toUpperCase() || res.status;
+                                                    // Actualizar el item seleccionado y la lista
+                                                    setSelectedInvoice((prev: any) => ({ ...prev, estado: nuevoEstado }));
+                                                    setInvoices(prev => prev.map(inv =>
+                                                        inv.id === selectedInvoice.id ? { ...inv, estado: nuevoEstado } : inv
+                                                    ));
                                                 } else {
                                                     alert(`Error: ${res.error}`);
                                                 }
+                                            } catch (e) {
+                                                console.error("Sync error", e);
+                                            } finally {
+                                                setIsSyncing(false);
                                             }
                                         }}
-                                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 p-2 rounded-lg text-xs transition-colors text-white"
+                                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 p-2 rounded-lg text-xs transition-colors text-white disabled:opacity-50"
                                     >
-                                        <RefreshCw className="w-4 h-4" />
+                                        {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                                         Sincronizar
                                     </button>
                                 </div>

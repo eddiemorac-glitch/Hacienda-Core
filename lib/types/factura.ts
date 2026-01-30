@@ -12,6 +12,7 @@ export interface Entidad {
     nombre: string;
     tipoIdentificacion: string; // 01=Fisica, 02=Juridica, etc.
     numeroIdentificacion: string;
+    codigoActividad?: string; // [v4.4 MANDATORY for Receiver if taxpayer]
     nombreComercial?: string;
     ubicacion?: Ubicacion;
     telefono?: { codigoPais: string; numero: string };

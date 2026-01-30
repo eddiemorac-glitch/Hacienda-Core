@@ -210,6 +210,7 @@ const InvoicePDF = ({ data, qrCode }: { data: any, qrCode: string }) => (
 );
 
 export class PdfService {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     static async generateInvoice(data: any): Promise<Buffer> {
         try {
             const qrUrl = `https://www.hacienda.go.cr/fe/detalle?clave=${data.clave}`;

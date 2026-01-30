@@ -45,9 +45,10 @@ export default function InvoiceForm() {
     const [hasSavedConfig, setHasSavedConfig] = useState(false);
 
     // Form States
-    const [clientData, setClientData] = useState({ nombre: "", cedula: "", correo: "" });
+    const [clientData, setClientData] = useState({ nombre: "", cedula: "", correo: "", codigoActividad: "" });
     const [authData, setAuthData] = useState({ haciendaUser: "", haciendaPass: "", pin: "" });
     const [condicionVenta, setCondicionVenta] = useState('01');
+    const [medioPago, setMedioPago] = useState('01'); // v4.4 Support
     const [plazoCredito, setPlazoCredito] = useState('30');
     const [p12File, setP12File] = useState<File | null>(null);
 
@@ -57,12 +58,14 @@ export default function InvoiceForm() {
         cabys: CabysItem | null;
         cantidad: number;
         precio: number;
+        descuento: number;
+        naturalezaDescuento: string;
         isIvi: boolean;
         detalle: string;
     }
 
     const [lines, setLines] = useState<LineItem[]>([
-        { id: Math.random().toString(), cabys: null, cantidad: 1, precio: 0, isIvi: true, detalle: '' }
+        { id: Math.random().toString(), cabys: null, cantidad: 1, precio: 0, descuento: 0, naturalezaDescuento: "01", isIvi: true, detalle: '' }
     ]);
 
     // REP Data
@@ -105,7 +108,7 @@ export default function InvoiceForm() {
         let subTotal = 0; let imp = 0; let total = 0;
         lines.forEach(line => {
             if (line.cabys) {
-                const calc = calcularLinea(line.cantidad, line.precio, line.isIvi, line.cabys.impuesto);
+                const calc = calcularLinea(line.cantidad, line.precio, line.isIvi, line.cabys.impuesto, line.descuento);
                 subTotal += calc.subTotal;
                 imp += calc.montoImpuesto;
                 total += calc.montoTotalLinea;
@@ -135,7 +138,7 @@ export default function InvoiceForm() {
             // Simplified for logic retention
             if (docType === 'FE' || docType === 'FEC') {
                 const detalles = lines.map((l, i) => {
-                    const calc = calcularLinea(l.cantidad, l.precio, l.isIvi, l.cabys?.impuesto || 0);
+                    const calc = calcularLinea(l.cantidad, l.precio, l.isIvi, l.cabys?.impuesto || 0, l.descuento);
                     return {
                         numeroLinea: i + 1,
                         codigoCabys: l.cabys?.codigo || "0000000000000",
@@ -144,7 +147,11 @@ export default function InvoiceForm() {
                         detalle: l.detalle || l.cabys?.descripcion || "Detalle",
                         precioUnitario: calc.precioUnitarioBase,
                         montoTotal: calc.subTotal,
-                        subTotal: calc.subTotal,
+                        descuento: l.descuento > 0 ? {
+                            monto: l.descuento,
+                            naturaleza: l.naturalezaDescuento
+                        } : undefined,
+                        subTotal: calc.subTotalNeto,
                         impuesto: { codigo: "01", codigoTarifa: "08", tarifa: (l.cabys?.impuesto || 0) * 100, monto: calc.montoImpuesto },
                         montoTotalLinea: calc.montoTotalLinea
                     };
@@ -152,11 +159,17 @@ export default function InvoiceForm() {
                 // [FIX] Ahora usa datos reales de la organización
                 docPayload = {
                     emisor: emisorData,
-                    receptor: { nombre: clientData.nombre, tipoIdentificacion: getTipoIdentificacion(clientData.cedula), numeroIdentificacion: clientData.cedula, correo: clientData.correo },
+                    receptor: {
+                        nombre: clientData.nombre,
+                        tipoIdentificacion: getTipoIdentificacion(clientData.cedula),
+                        numeroIdentificacion: clientData.cedula,
+                        correo: clientData.correo,
+                        codigoActividad: clientData.codigoActividad // v4.4
+                    },
                     detalles,
                     condicionVenta,
                     plazoCredito,
-                    medioPago: ['01'], // 01=Efectivo, 02=Tarjeta, 03=Cheque, etc.
+                    medioPago: [medioPago],
                     resumen: { codigoMoneda: "CRC", totalVenta: totals.subTotal, totalImpuesto: totals.impuesto, totalComprobante: totals.total, totalVentaNeta: totals.subTotal, totalDescuentos: 0, totalGravado: totals.subTotal, totalExento: 0, totalExonerado: 0 }
                 };
             } else if (docType === 'REP') {
@@ -244,117 +257,197 @@ export default function InvoiceForm() {
                             className="space-y-8"
                         >
                             {/* SECTION 1: IDENTITY */}
-                            <div className="space-y-6">
-                                <div className="flex items-center gap-4 px-2">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs border border-primary/20">01</div>
-                                    <h2 className="text-sm font-black text-white uppercase tracking-[0.2em]">Información del Receptor</h2>
-                                    <div className="h-px bg-white/5 flex-1" />
+                            <div className="premium-card p-10 !rounded-[2.5rem] bg-white/[0.01] space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-lg shadow-primary/5">
+                                        <User className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none">Datos de su Cliente</h2>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Identificación del Receptor v4.4</p>
+                                    </div>
+                                    <div className="h-px bg-white/5 flex-1 ml-4" />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-2">
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Nombre o Razón Social</label>
-                                        <input
-                                            required
-                                            value={clientData.nombre}
-                                            onChange={e => setClientData({ ...clientData, nombre: e.target.value })}
-                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
-                                            placeholder="Ej: Juan Pérez"
-                                            className="modern-input"
-                                        />
+                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-2">
+                                            Nombre o Razón Social
+                                        </label>
+                                        <div className="nova-input-group">
+                                            <User className="nova-input-icon w-4 h-4" />
+                                            <input
+                                                required
+                                                value={clientData.nombre}
+                                                onChange={e => setClientData({ ...clientData, nombre: e.target.value })}
+                                                onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                                placeholder="Ej: Juan Pérez o Empresa S.A."
+                                                className="nova-input"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Número de Identificación</label>
-                                        <input
-                                            required
-                                            value={clientData.cedula}
-                                            onChange={e => setClientData({ ...clientData, cedula: e.target.value })}
-                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
-                                            placeholder="1-1111-1111"
-                                            className="modern-input font-mono"
-                                        />
+                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-2">
+                                            Número de Cédula
+                                        </label>
+                                        <div className="nova-input-group">
+                                            <Hash className="nova-input-icon w-4 h-4" />
+                                            <input
+                                                required
+                                                value={clientData.cedula}
+                                                onChange={e => setClientData({ ...clientData, cedula: e.target.value })}
+                                                onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                                placeholder="ID sin guiones..."
+                                                className="nova-input font-mono"
+                                            />
+                                        </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1">Correo Electrónico</label>
-                                        <input
-                                            type="email"
-                                            value={clientData.correo}
-                                            onChange={e => setClientData({ ...clientData, correo: e.target.value })}
-                                            onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
-                                            placeholder="cliente@correo.com"
-                                            className="modern-input"
-                                        />
+                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-2">
+                                            Correo Electrónico
+                                        </label>
+                                        <div className="nova-input-group">
+                                            <Mail className="nova-input-icon w-4 h-4" />
+                                            <input
+                                                type="email"
+                                                value={clientData.correo}
+                                                onChange={e => setClientData({ ...clientData, correo: e.target.value })}
+                                                onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+                                                placeholder="cliente@correo.com"
+                                                className="nova-input"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 flex items-center gap-2">
+                                            Código de Actividad
+                                        </label>
+                                        <div className="nova-input-group">
+                                            <Cpu className="nova-input-icon w-4 h-4 text-indigo-400" />
+                                            <input
+                                                value={clientData.codigoActividad}
+                                                onChange={e => setClientData({ ...clientData, codigoActividad: e.target.value })}
+                                                placeholder="Ej: 721001"
+                                                className="nova-input font-mono bg-indigo-500/5 border-indigo-500/20 focus:border-indigo-500/50"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* SECTION 2: SERVICES / LINES */}
-                            <div className="space-y-6 pt-4">
-                                <div className="flex items-center gap-4 px-2">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs border border-primary/20">02</div>
-                                    <h2 className="text-sm font-black text-white uppercase tracking-[0.2em]">Detalle de los Servicios</h2>
-                                    <div className="h-px bg-white/5 flex-1" />
+                            <div className="premium-card p-10 !rounded-[3rem] bg-white/[0.01] space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-lg shadow-primary/5">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none">Cosas que va a Cobrar</h2>
+                                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Detalle de Bienes y Servicios</p>
+                                    </div>
+                                    <div className="h-px bg-white/5 flex-1 ml-4" />
                                     <button
                                         type="button"
-                                        onClick={() => setLines([...lines, { id: Math.random().toString(), cabys: null, cantidad: 1, precio: 0, isIvi: true, detalle: '' }])}
-                                        className="bg-white/5 hover:bg-white/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-white/5"
+                                        onClick={() => setLines([...lines, { id: Math.random().toString(), cabys: null, cantidad: 1, precio: 0, descuento: 0, naturalezaDescuento: "01", isIvi: true, detalle: '' }])}
+                                        className="bg-primary/10 hover:bg-primary/20 text-primary px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 border border-primary/20 hover:scale-105 active:scale-95"
                                     >
-                                        <PlusCircle className="w-4 h-4" /> Agregar Item
+                                        <PlusCircle className="w-4 h-4" /> Agregar Producto
                                     </button>
                                 </div>
 
                                 {docType === 'REP' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-500 uppercase">Monto Pago (CRC)</label>
-                                            <input type="number" value={repData.montoPago || ""} onChange={e => setRepData({ ...repData, montoPago: parseFloat(e.target.value) || 0 })} className="modern-input text-xl font-bold text-success border-success/20 bg-success/5" />
+                                            <label className="text-[10px] font-black text-slate-500 uppercase">
+                                                Monto Pago (CRC)
+                                            </label>
+                                            <div className="nova-input-group">
+                                                <DollarSign className="nova-input-icon w-4 h-4 text-emerald-400" />
+                                                <input type="number" value={repData.montoPago || ""} onChange={e => setRepData({ ...repData, montoPago: parseFloat(e.target.value) || 0 })} className="nova-input text-xl font-bold text-success border-success/20 bg-success/5" />
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-black text-slate-500 uppercase">Clave Original</label>
-                                            <input value={repData.referenciaClave} onChange={e => setRepData({ ...repData, referenciaClave: e.target.value })} placeholder="Clave de 50 dígitos..." className="modern-input font-mono" />
+                                            <label className="text-[10px] font-black text-slate-500 uppercase">
+                                                Clave Original
+                                            </label>
+                                            <div className="nova-input-group">
+                                                <Hash className="nova-input-icon w-4 h-4" />
+                                                <input value={repData.referenciaClave} onChange={e => setRepData({ ...repData, referenciaClave: e.target.value })} placeholder="Clave de 50 dígitos..." className="nova-input font-mono" />
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
                                         {/* Table Flow */}
-                                        <div className="hidden lg:grid grid-cols-12 gap-6 px-10 mb-2 text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                                            <div className="col-span-6">Búsqueda de Catálogo (CAByS)</div>
+                                        <div className="hidden lg:grid grid-cols-12 gap-6 px-4 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                                            <div className="col-span-6 flex items-center gap-2">
+                                                Buscador de Producto Legal (CAByS)
+                                                <div className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] animate-pulse">Sentinel Intel</div>
+                                            </div>
                                             <div className="col-span-1 text-center">Cant.</div>
                                             <div className="col-span-2 text-right">Unitario ¢</div>
                                             <div className="col-span-2 text-right">Total ¢</div>
                                         </div>
 
                                         {lines.map((l, i) => {
-                                            const lineTotal = l.cabys ? calcularLinea(l.cantidad, l.precio, l.isIvi, l.cabys.impuesto).montoTotalLinea : 0;
+                                            const lineTotal = l.cabys ? calcularLinea(l.cantidad, l.precio, l.isIvi, l.cabys.impuesto, l.descuento).montoTotalLinea : 0;
                                             return (
-                                                <div key={l.id} className="grid grid-cols-12 gap-6 items-center p-6 bg-white/[0.02] hover:bg-white/[0.04] rounded-2xl border border-white/5 group transition-all">
-                                                    <div className="col-span-12 lg:col-span-6 space-y-3">
+                                                <div key={l.id} className="grid grid-cols-12 gap-6 items-center p-6 bg-white/[0.02] hover:bg-white/[0.04] rounded-3xl border border-white/5 group transition-all relative overflow-hidden">
+                                                    <div className="absolute inset-y-0 left-0 w-1 bg-primary/20 group-hover:bg-primary transition-all" />
+                                                    <div className="col-span-12 lg:col-span-6 space-y-4">
                                                         <CabysSearch onSelect={item => setLines(prev => prev.map(x => x.id === l.id ? { ...x, cabys: item } : x))} />
-                                                        <input
-                                                            placeholder="Descripción personalizada para este concepto..."
-                                                            value={l.detalle}
-                                                            onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, detalle: e.target.value } : x))}
-                                                            className="w-full bg-transparent border-b border-white/5 py-1 text-[11px] font-bold text-slate-500 outline-none focus:border-primary/50 focus:text-slate-300 transition-all"
-                                                        />
+                                                        <div className="relative">
+                                                            <input
+                                                                placeholder="Descripción personalizada para este concepto..."
+                                                                value={l.detalle}
+                                                                onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, detalle: e.target.value } : x))}
+                                                                className="w-full bg-transparent border-b border-white/5 py-2 text-xs font-bold text-slate-400 outline-none focus:border-primary/50 focus:text-slate-200 transition-all italic"
+                                                            />
+                                                        </div>
                                                     </div>
                                                     <div className="col-span-4 lg:col-span-1">
                                                         <label className="lg:hidden text-[9px] font-black text-slate-600 block mb-1">CANT.</label>
-                                                        <input type="number" value={l.cantidad} onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, cantidad: parseFloat(e.target.value) || 0 } : x))} className="modern-input text-center px-0 font-black h-12" />
+                                                        <div className="nova-input-group">
+                                                            <input type="number" value={l.cantidad} onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, cantidad: parseFloat(e.target.value) || 0 } : x))} className="nova-input text-center px-0 font-black h-12 !rounded-xl !pl-0" />
+                                                        </div>
                                                     </div>
                                                     <div className="col-span-8 lg:col-span-2">
                                                         <label className="lg:hidden text-[9px] font-black text-slate-600 block mb-1">PRECIO ¢</label>
-                                                        <input type="number" value={l.precio} onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, precio: parseFloat(e.target.value) || 0 } : x))} className="modern-input text-right font-mono font-black h-12 text-emerald-400" />
+                                                        <div className="nova-input-group">
+                                                            <DollarSign className="nova-input-icon w-3 h-3 text-emerald-500/50" />
+                                                            <input type="number" value={l.precio} onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, price: parseFloat(e.target.value) || 0 } : x))} className="nova-input text-right font-mono font-black h-12 text-emerald-400 !rounded-xl !pl-8" />
+                                                        </div>
                                                     </div>
-                                                    <div className="col-span-10 lg:col-span-2 text-right pt-2 border-l border-white/5 pl-6 hidden lg:block">
+                                                    <div className="col-span-10 lg:col-span-2 text-right pt-2 border-l border-white/5 pl-8 hidden lg:block">
                                                         <p className="text-[7px] font-black text-slate-600 uppercase mb-1">Línea Total</p>
-                                                        <span className="text-base font-black text-white italic tracking-tighter">¢{redondear(lineTotal).toLocaleString()}</span>
+                                                        <span className="text-lg font-black text-white italic tracking-tighter">¢{redondear(lineTotal).toLocaleString()}</span>
+                                                        <div className="mt-3 flex gap-2 justify-end">
+                                                            <input
+                                                                type="number"
+                                                                placeholder="Desc."
+                                                                value={l.descuento || ""}
+                                                                onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, descuento: parseFloat(e.target.value) || 0 } : x))}
+                                                                className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[9px] text-right focus:border-primary/50 outline-none"
+                                                            />
+                                                            <select
+                                                                value={l.naturalezaDescuento}
+                                                                onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, naturalezaDescuento: e.target.value } : x))}
+                                                                className="w-8 bg-white/5 border border-white/10 rounded-lg px-1 py-1 text-[9px] outline-none"
+                                                                title="Naturaleza Código"
+                                                            >
+                                                                {[...Array(11)].map((_, idx) => (
+                                                                    <option key={idx} value={(idx + 1).toString().padStart(2, '0')}>{idx + 1}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                     <div className="col-span-2 lg:col-span-1 flex justify-end">
                                                         <button
                                                             type="button"
                                                             onClick={() => setLines(lines.filter(x => x.id !== l.id))}
-                                                            className="p-3 text-slate-600 hover:text-red-500 transition-all bg-white/5 rounded-xl hover:bg-red-500/10 active:scale-90"
+                                                            className="p-4 text-slate-600 hover:text-red-500 transition-all bg-white/5 rounded-2xl hover:bg-red-500/10 active:scale-90"
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
+                                                            <Trash2 className="w-5 h-5" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -373,16 +466,50 @@ export default function InvoiceForm() {
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Condición de Venta</label>
-                                            <select value={condicionVenta} onChange={e => setCondicionVenta(e.target.value)} className="modern-input">
-                                                <option value="01">Contado</option>
-                                                <option value="02">Crédito</option>
-                                            </select>
+                                            <div className="nova-input-group">
+                                                <Calendar className="nova-input-icon w-4 h-4" />
+                                                <select value={condicionVenta} onChange={e => setCondicionVenta(e.target.value)} className="nova-input !pl-11">
+                                                    <option value="01">Contado</option>
+                                                    <option value="02">Crédito</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Medio de Pago</label>
+                                            <div className="nova-input-group">
+                                                <CreditCard className="nova-input-icon w-4 h-4" />
+                                                <select value={medioPago} onChange={e => setMedioPago(e.target.value)} className="nova-input !pl-11">
+                                                    <option value="01">Efectivo</option>
+                                                    <option value="02">Tarjeta</option>
+                                                    <option value="03">Cheque</option>
+                                                    <option value="04">Transferencia</option>
+                                                    <option value="05">SINPE Móvil</option>
+                                                </select>
+                                            </div>
                                         </div>
                                         {condicionVenta === '02' && (
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">Plazo (días)</label>
-                                                <input type="number" value={plazoCredito} onChange={e => setPlazoCredito(e.target.value)} className="modern-input" />
-                                            </div>
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                className="space-y-4 col-span-2"
+                                            >
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">Plazo (días)</label>
+                                                    <div className="nova-input-group">
+                                                        <Settings className="nova-input-icon w-4 h-4" />
+                                                        <input type="number" value={plazoCredito} onChange={e => setPlazoCredito(e.target.value)} className="nova-input" />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3">
+                                                    <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5" />
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Aviso de Sentinel (REP)</p>
+                                                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                                                            Hacienda requiere que emita un **Recibo Electrónico de Pago (REP)** cuando su cliente le pague. Sentinel le recordará automáticamente en {plazoCredito || 30} días.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
                                         )}
                                     </div>
                                     <div className="pt-4 space-y-3">
@@ -430,8 +557,8 @@ export default function InvoiceForm() {
                                 <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20">
                                     <ShieldCheck className="w-10 h-10 text-primary" />
                                 </div>
-                                <h1 className="text-3xl font-bold text-white tracking-tight">Autorización de Hacienda</h1>
-                                <p className="text-slate-500 max-w-sm mx-auto">Procederemos con el firmado digital XAdES-EPES y el envío inmediato.</p>
+                                <h1 className="text-3xl font-bold text-white tracking-tight">Firma Digital de Seguridad</h1>
+                                <p className="text-slate-500 max-w-sm mx-auto">Procederemos a sellar su factura con su firma digital para enviarla a Hacienda.</p>
                             </div>
 
                             <div className="bg-[#0A0F1E] border border-white/5 rounded-[2.5rem] p-10 space-y-8">
@@ -445,21 +572,33 @@ export default function InvoiceForm() {
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Certificado Criptográfico (.p12)</label>
-                                        <input type="file" onChange={e => setP12File(e.target.files?.[0] || null)} className="w-full py-4 px-6 bg-white/5 border border-white/10 rounded-2xl text-xs text-slate-400 cursor-pointer" />
+                                        <div className="nova-input-group">
+                                            <ShieldCheck className="nova-input-icon w-4 h-4" />
+                                            <input type="file" onChange={e => setP12File(e.target.files?.[0] || null)} className="w-full py-4 px-11 bg-white/5 border border-white/10 rounded-2xl text-xs text-slate-400 cursor-pointer outline-none focus:border-primary/50" />
+                                        </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">PIN de Seguridad (4 dígitos)</label>
-                                            <input type="password" value={authData.pin} onChange={e => setAuthData({ ...authData, pin: e.target.value })} placeholder="••••" className="modern-input text-center text-xl tracking-[0.5em]" />
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Su PIN de Firma (4 números)</label>
+                                            <div className="nova-input-group">
+                                                <Lock className="nova-input-icon w-4 h-4" />
+                                                <input type="password" value={authData.pin} onChange={e => setAuthData({ ...authData, pin: e.target.value })} placeholder="••••" className="nova-input text-center text-xl tracking-[0.5em]" />
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Password API de Hacienda</label>
-                                            <input type="password" value={authData.haciendaPass} onChange={e => setAuthData({ ...authData, haciendaPass: e.target.value })} placeholder="••••••••" className="modern-input" />
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Contraseña de Hacienda</label>
+                                            <div className="nova-input-group">
+                                                <Lock className="nova-input-icon w-4 h-4" />
+                                                <input type="password" value={authData.haciendaPass} onChange={e => setAuthData({ ...authData, haciendaPass: e.target.value })} placeholder="••••••••" className="nova-input" />
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Usuario del Sistema (Hacienda)</label>
-                                        <input value={authData.haciendaUser} onChange={e => setAuthData({ ...authData, haciendaUser: e.target.value })} placeholder="cpf-01-xxxx-xxxxxx" className="modern-input font-mono" />
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Nombre de Usuario (CPF)</label>
+                                        <div className="nova-input-group">
+                                            <User className="nova-input-icon w-4 h-4" />
+                                            <input value={authData.haciendaUser} onChange={e => setAuthData({ ...authData, haciendaUser: e.target.value })} placeholder="cpf-01-..." className="nova-input font-mono" />
+                                        </div>
                                     </div>
                                 </div>
 

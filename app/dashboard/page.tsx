@@ -8,6 +8,7 @@ import { useFrontendSwarm } from "@/hooks/use-swarm"; // [SYNC]
 import { SwarmHealthMonitor } from "@/components/swarm-health";
 import { SentinelNotifications } from "@/components/sentinel-notifications";
 import { PredictivePrefetch } from "@/components/predictive-prefetch";
+import { SentinelCoach } from "@/components/sentinel-coach";
 import {
     ShieldCheck,
     FileText,
@@ -20,17 +21,20 @@ import {
     Loader2,
     Activity,
     Server,
-    Lock,
     ChevronRight,
     TrendingUp,
     LayoutDashboard,
     ArrowUpRight,
+    ArrowRight,
     Clock,
     Download,
     X,
+    Lock,
     AlertCircle
 } from "lucide-react";
 import { getDashboardStats, getLatestInvoices } from "./actions/stats";
+import { verifyHaciendaStatus, queryHaciendaStatusByClave } from "../actions";
+import { getLastInvoiceClave } from "./qa/actions";
 import { createPortalSession } from "../stripe-actions";
 import { AuditLogFeed } from "./audit-feed";
 import { getMyUpgradeRequest } from "@/app/upgrade-actions";
@@ -46,9 +50,19 @@ export default function DashboardPage() {
     const [stats, setStats] = useState<any>({ todayCount: 0, totalPending: 0, totalInvoiceCount: 0, org: null });
     const [invoices, setInvoices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncingId, setSyncingId] = useState<string | null>(null);
+
+    // [MANUAL VERIFICATION STATE]
+    const [manualClave, setManualClave] = useState("");
+    const [manualResult, setManualResult] = useState<any>(null);
+    const [isManualQuerying, setIsManualQuerying] = useState(false);
 
     const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
     const [pendingUpgrade, setPendingUpgrade] = useState<any>(null);
+
+    const isExpired = stats?.org?.subscriptionEndsAt &&
+        new Date(stats?.org?.subscriptionEndsAt) < new Date() &&
+        stats?.org?.subscriptionStatus !== 'active';
 
     useEffect(() => {
         // [PAYMENT DETECTION] Check if we just came back from a successful Stripe checkout
@@ -95,12 +109,96 @@ export default function DashboardPage() {
         loadData();
     }, []);
 
+    const handleSyncStatus = async (invoiceId: string) => {
+        setSyncingId(invoiceId);
+        try {
+            const res = await verifyHaciendaStatus(invoiceId);
+            if (res.success) {
+                // Update local state without full reload
+                setInvoices(prev => prev.map(inv =>
+                    inv.id === invoiceId ? { ...inv, estado: res.haciendaResponse?.['ind-estado']?.toUpperCase() || inv.estado } : inv
+                ));
+            } else {
+                alert(`Error al sincronizar: ${res.error}`);
+            }
+        } catch (e) {
+            console.error("Sync Error", e);
+        } finally {
+            setSyncingId(null);
+        }
+    };
+
+    const handleManualVerify = async () => {
+        if (manualClave.length < 50) {
+            alert("La clave debe tener 50 dígitos.");
+            return;
+        }
+        setIsManualQuerying(true);
+        setManualResult(null);
+        try {
+            const res = await queryHaciendaStatusByClave(manualClave);
+            setManualResult(res);
+        } catch (e) {
+            console.error("Manual Query Error", e);
+        } finally {
+            setIsManualQuerying(false);
+        }
+    };
+
+    const handleFetchLastClave = async () => {
+        try {
+            const clave = await getLastInvoiceClave();
+            if (clave) setManualClave(clave);
+            else alert("No se encontraron facturas recientes.");
+        } catch (e) {
+            console.error("Fetch Last Clave Error", e);
+        }
+    };
+
 
 
     return (
         <div className="flex min-h-screen flex-col items-center p-8 sm:p-20 relative overflow-hidden bg-[#020617] selection:bg-primary/20">
             <SentinelNotifications />
             <PredictivePrefetch />
+
+            {/* [PHASE 9] Lockout Overlay for Expired Subscriptions */}
+            <AnimatePresence>
+                {isExpired && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-[#020617]/90 backdrop-blur-2xl flex items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="max-w-md w-full premium-card p-10 border-red-500/30 text-center space-y-8 shadow-[0_40px_100px_-20px_rgba(239,68,68,0.3)]"
+                        >
+                            <div className="w-20 h-20 bg-rose-500/20 rounded-3xl flex items-center justify-center mx-auto text-rose-500 border border-rose-500/30">
+                                <Lock className="w-10 h-10" />
+                            </div>
+                            <div className="space-y-4">
+                                <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">Nodo Restringido</h2>
+                                <p className="text-slate-400 text-sm leading-relaxed">
+                                    Sentinel ha detectado que su período de suscripción ha expirado. Por seguridad y cumplimiento legal, las funciones de emisión han sido pausadas.
+                                </p>
+                            </div>
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Fin de Ciclo</p>
+                                <p className="font-mono text-white text-lg">{new Date(stats.org.subscriptionEndsAt).toLocaleDateString()}</p>
+                            </div>
+                            <Link href="/dashboard/billing/checkout" className="block w-full">
+                                <button className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                                    Reactivar con SINPE <ArrowRight className="ml-2 w-4 h-4 inline" />
+                                </button>
+                            </Link>
+                            <p className="text-[10px] text-slate-500 font-medium">Si ya realizó el pago, por favor espere la aprobación del administrador.</p>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Cinematic Background */}
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
@@ -390,6 +488,75 @@ export default function DashboardPage() {
                             </p>
                         </div>
 
+                        {/* [PHASE 12] Manual Verification Widget */}
+                        <div className="premium-card p-8 !rounded-[2.5rem] border-primary/20 bg-primary/5 space-y-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary border border-primary/30">
+                                    <ShieldCheck className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-black uppercase tracking-tighter text-white">Verificador de Hacienda</h4>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Protocolo de Consulta Directa</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="relative group">
+                                    <input
+                                        type="text"
+                                        placeholder="Pegue los 50 dígitos de la Clave..."
+                                        value={manualClave}
+                                        onChange={(e) => setManualClave(e.target.value)}
+                                        className="w-full bg-[#030816] border border-white/10 rounded-2xl p-5 text-xs font-mono text-primary placeholder:text-slate-700 focus:outline-none focus:border-primary/50 transition-all group-hover:border-white/20"
+                                    />
+                                    <button
+                                        onClick={handleFetchLastClave}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 p-2 hover:bg-primary/20 rounded-xl transition-all text-slate-500 hover:text-primary"
+                                        title="Cargar última clave emitida"
+                                    >
+                                        <Clock className="w-4 h-4" />
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={handleManualVerify}
+                                    disabled={isManualQuerying || !manualClave}
+                                    className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                                >
+                                    {isManualQuerying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                                    Consultar en Tiempo Real
+                                </button>
+                            </div>
+
+                            {manualResult && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={`p-5 rounded-2xl border ${manualResult.success ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}
+                                >
+                                    {manualResult.success ? (
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Estado Hacienda</span>
+                                                <div className="flex items-center gap-1.5 bg-emerald-500/20 px-2 py-1 rounded-lg">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                                    <span className="text-[10px] font-black text-emerald-400">{(manualResult.status['ind-estado'] || 'SIN RESPUESTA').toUpperCase()}</span>
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+                                                {manualResult.status['respuesta-xml'] ? "La factura ha sido procesada correctamente por los nodos de Hacienda." : "Hacienda ha recibido el documento, pero aún está en proceso de validación."}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Error de Consulta</p>
+                                            <p className="text-[10px] text-slate-400 leading-tight">{manualResult.error}</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
+                        </div>
+
                         <AuditLogFeed />
                     </div>
 
@@ -450,6 +617,15 @@ export default function DashboardPage() {
                                                     </td>
                                                     <td className="px-8 py-6 text-right">
                                                         <div className="flex justify-end gap-3">
+                                                            <button
+                                                                disabled={syncingId === inv.id}
+                                                                onClick={() => handleSyncStatus(inv.id)}
+                                                                className={`w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white transition-all duration-300 ${syncingId === inv.id ? 'bg-primary/20 cursor-wait' : 'bg-white/5 hover:bg-emerald-500/20 hover:text-emerald-400'
+                                                                    }`}
+                                                                title="Sincronizar con Hacienda"
+                                                            >
+                                                                {syncingId === inv.id ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <RefreshCw className="w-4 h-4" />}
+                                                            </button>
                                                             <Link
                                                                 href={`/api/v1/documents/${inv.clave}/pdf`}
                                                                 target="_blank"

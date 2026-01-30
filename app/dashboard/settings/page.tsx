@@ -199,13 +199,16 @@ export default function SettingsPage() {
 
                             <div className="group/input space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block group-focus-within/input:text-primary transition-colors">Usuario de Sistema (Físico/Jurídico)</label>
-                                <input
-                                    required
-                                    value={config.haciendaUser}
-                                    onChange={e => setConfig({ ...config, haciendaUser: e.target.value })}
-                                    placeholder="cpf-01-xxxx-xxxxxx ó cpf-02-xxxx-xxxxxxxx"
-                                    className="modern-input font-mono"
-                                />
+                                <div className="nova-input-group">
+                                    <User className="nova-input-icon w-4 h-4" />
+                                    <input
+                                        required
+                                        value={config.haciendaUser}
+                                        onChange={e => setConfig({ ...config, haciendaUser: e.target.value })}
+                                        placeholder="cpf-01-xxxx-xxxxxx ó cpf-02-xxxx-xxxxxxxx"
+                                        className="nova-input font-mono"
+                                    />
+                                </div>
                                 <p className="text-[9px] text-slate-600 ml-1">Físico: cpf-01-xxxx-xxxxxx | Jurídico: cpf-02-xxxx-xxxxxxxx</p>
                             </div>
 
@@ -240,14 +243,17 @@ export default function SettingsPage() {
                                 <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block group-focus-within/input:text-primary transition-colors">
                                     Password API {existingConfig.hasPass && <span className="text-emerald-500 ml-2">✓ Configurado</span>}
                                 </label>
-                                <input
-                                    required={!existingConfig.hasPass}
-                                    type="password"
-                                    value={config.haciendaPass}
-                                    onChange={e => setConfig({ ...config, haciendaPass: e.target.value })}
-                                    placeholder={existingConfig.hasPass ? "Dejar vacío para mantener actual" : "Ingrese la contraseña del API"}
-                                    className={`modern-input ${existingConfig.hasPass && !config.haciendaPass ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}
-                                />
+                                <div className="nova-input-group">
+                                    <Lock className="nova-input-icon w-4 h-4" />
+                                    <input
+                                        required={!existingConfig.hasPass}
+                                        type="password"
+                                        value={config.haciendaPass}
+                                        onChange={e => setConfig({ ...config, haciendaPass: e.target.value })}
+                                        placeholder={existingConfig.hasPass ? "Dejar vacío para mantener actual" : "Ingrese la contraseña del API"}
+                                        className={`nova-input ${existingConfig.hasPass && !config.haciendaPass ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}
+                                    />
+                                </div>
                                 {existingConfig.hasPass && <p className="text-[9px] text-emerald-600 ml-1">Deje en blanco para mantener la contraseña actual</p>}
                             </div>
 
@@ -261,16 +267,19 @@ export default function SettingsPage() {
                                 <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block">
                                     PIN de Llave {existingConfig.hasPin && <span className="text-emerald-500 ml-2">✓ Configurado</span>}
                                 </label>
-                                <input
-                                    required={!existingConfig.hasPin}
-                                    minLength={4}
-                                    maxLength={20}
-                                    type="password"
-                                    value={config.haciendaPin}
-                                    onChange={e => setConfig({ ...config, haciendaPin: e.target.value })}
-                                    placeholder={existingConfig.hasPin ? "Dejar vacío para mantener PIN actual" : "Ingrese el PIN del certificado"}
-                                    className={`modern-input text-xl tracking-[0.3em] text-center ${existingConfig.hasPin && !config.haciendaPin ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}
-                                />
+                                <div className="nova-input-group">
+                                    <Key className="nova-input-icon w-4 h-4" />
+                                    <input
+                                        required={!existingConfig.hasPin}
+                                        minLength={4}
+                                        maxLength={20}
+                                        type="password"
+                                        value={config.haciendaPin}
+                                        onChange={e => setConfig({ ...config, haciendaPin: e.target.value })}
+                                        placeholder={existingConfig.hasPin ? "Dejar vacío para mantener PIN actual" : "Ingrese el PIN del certificado"}
+                                        className={`nova-input text-xl tracking-[0.3em] text-center ${existingConfig.hasPin && !config.haciendaPin ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}
+                                    />
+                                </div>
                                 {existingConfig.hasPin && <p className="text-[9px] text-emerald-600 ml-1">Deje en blanco para mantener el PIN actual</p>}
                             </div>
 
@@ -285,11 +294,12 @@ export default function SettingsPage() {
                                         onChange={handleFileChange}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
-                                    <div className={`absolute inset-0 modern-input flex items-center justify-between px-6 group-hover/file:border-emerald-500/30 group-hover/file:bg-emerald-500/5 transition-all ${existingConfig.hasP12 && !p12FileName ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}>
+                                    <div className={`absolute inset-0 nova-input flex items-center justify-between px-11 group-hover/file:border-emerald-500/30 group-hover/file:bg-emerald-500/5 transition-all ${existingConfig.hasP12 && !p12FileName ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}>
+                                        <Upload className={`nova-input-icon w-4 h-4 ${existingConfig.hasP12 || p12FileName ? 'text-emerald-500' : 'text-slate-500'}`} />
                                         <span className="text-[11px] text-slate-400 font-bold tracking-tight">
                                             {p12FileName || (existingConfig.hasP12 ? "✓ CERTIFICADO ACTIVO - Click para reemplazar" : "SUBIR LLAVE .P12")}
                                         </span>
-                                        <Upload className={`w-4 h-4 ${existingConfig.hasP12 || p12FileName ? 'text-emerald-500' : 'text-slate-500'}`} />
+                                        <Activity className="w-3 h-3 text-slate-600 opacity-20" />
                                     </div>
                                 </div>
                                 {existingConfig.hasP12 && <p className="text-[9px] text-emerald-600 ml-1">Certificado guardado de forma segura. Solo suba uno nuevo si desea reemplazarlo.</p>}
@@ -325,12 +335,15 @@ export default function SettingsPage() {
                                         <div className="group/input space-y-2">
                                             <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block">URL del Logo (SVG recomendado)</label>
                                             <div className="flex gap-4">
-                                                <input
-                                                    value={branding.logoUrl}
-                                                    onChange={e => setBranding({ ...branding, logoUrl: e.target.value })}
-                                                    placeholder="https://tu-bucket.com/logo.svg"
-                                                    className="modern-input flex-1"
-                                                />
+                                                <div className="nova-input-group flex-1">
+                                                    <ImageIcon className="nova-input-icon w-4 h-4" />
+                                                    <input
+                                                        value={branding.logoUrl}
+                                                        onChange={e => setBranding({ ...branding, logoUrl: e.target.value })}
+                                                        placeholder="https://tu-bucket.com/logo.svg"
+                                                        className="nova-input"
+                                                    />
+                                                </div>
                                                 <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center overflow-hidden p-2">
                                                     {branding.logoUrl ? <img src={branding.logoUrl} alt="Preview" className="w-full h-full object-contain" /> : <ImageIcon className="w-5 h-5 text-slate-700" />}
                                                 </div>
@@ -339,7 +352,7 @@ export default function SettingsPage() {
 
                                         <div className="group/input space-y-2">
                                             <label className="text-[10px] font-black text-slate-500 uppercase ml-1 block">Dominio Personalizado</label>
-                                            <div className="flex items-center gap-2 modern-input bg-slate-950/30">
+                                            <div className="flex items-center gap-2 nova-input bg-slate-950/30">
                                                 <Globe className="w-4 h-4 text-slate-600" />
                                                 <input
                                                     placeholder="factura.tuempresa.com"

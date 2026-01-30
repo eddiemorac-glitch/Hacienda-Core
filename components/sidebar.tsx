@@ -66,6 +66,7 @@ export function Sidebar() {
     // Determine feature access based on plan
     const hasPremiumFeatures = ['BUSINESS', 'ENTERPRISE'].includes(currentPlan);
     const hasApiAccess = currentPlan === 'ENTERPRISE' || isAdmin;
+    const hasHaciendaConfig = !!((session?.user as any)?.haciendaUser && (session?.user as any)?.hasHaciendaP12);
 
     // [SYNC] Refresh session when coming back from Stripe or on subscription change detection
     useEffect(() => {
@@ -121,7 +122,13 @@ export function Sidebar() {
 
                 <div className="h-px bg-white/5 my-4 mx-2" />
 
-                <NavLink href="/dashboard/guide" icon={<BookOpen className="w-5 h-5" />} label="Guía de Usuario" active={pathname === '/dashboard/guide'} />
+                <NavLink
+                    href="/dashboard/guide"
+                    icon={<BookOpen className={`w-5 h-5 ${!hasHaciendaConfig ? 'text-amber-400 animate-pulse' : ''}`} />}
+                    label="Aprende a Facturar"
+                    active={pathname === '/dashboard/guide'}
+                    badge={!hasHaciendaConfig ? "APRENDER" : ""}
+                />
 
                 {/* Business/Enterprise Features */}
                 {hasPremiumFeatures && (
@@ -181,7 +188,7 @@ export function Sidebar() {
     );
 }
 
-function NavLink({ href, icon, label, active, locked }: { href: string; icon: React.ReactNode; label: string; active?: boolean; locked?: boolean }) {
+function NavLink({ href, icon, label, active, locked, badge }: { href: string; icon: React.ReactNode; label: string; active?: boolean; locked?: boolean; badge?: string }) {
     return (
         <Link
             href={locked ? '#' : href}
@@ -195,6 +202,11 @@ function NavLink({ href, icon, label, active, locked }: { href: string; icon: Re
         >
             <div className={`${active ? 'text-primary' : 'text-slate-400 group-hover/link:text-primary'} transition-colors`}>{icon}</div>
             <span className="font-medium text-sm whitespace-nowrap">{label}</span>
+            {badge && (
+                <span className="ml-auto text-[8px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded-full animate-pulse">
+                    {badge}
+                </span>
+            )}
             {locked && <span className="text-[8px] text-amber-400 ml-auto">PRO</span>}
         </Link>
     );

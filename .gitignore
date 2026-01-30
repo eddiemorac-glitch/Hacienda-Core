@@ -39,3 +39,37 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database
+prisma/dev.db
+prisma/dev.db-journal
+
+# temporary logs and reports
+lint_report.txt
+changes.txt
+
+# technical/debug scripts (Excluded from Production)
+check-user.js
+check-vault.ts
+cleanup-test-invoices.ts
+deep-inspect-xml.ts
+deep-inspect.ts
+dump-db.ts
+find-invoice.ts
+fix-last-invoice.ts
+force-approve.ts
+inspect-invoices.ts
+inspect-orgs.ts
+inspect-user.js
+inspect-xml.ts
+promote-admin.ts
+repair-auth.ts
+test-bcrypt.ts
+test-db.js
+test-hacienda-auth.ts
+test-pdf-error.ts
+test-register.js
+test-schema-sync.js
+update-hacienda-user.ts
+build.log
+full_lint.json

@@ -100,22 +100,24 @@ export async function getLatestInvoices() {
 
 export async function checkHaciendaHealth() {
     try {
-        const start = Date.now();
-        const res = await fetch("https://idp.comprobanteselectronicos.go.cr/auth/realms/rut/protocol/openid-connect/token", {
-            method: 'HEAD',
-            next: { revalidate: 60 } // Cache health for 1 min
-        });
-        const duration = Date.now() - start;
+        const { HealthService } = await import('@/lib/security/health-service');
+        const pulse = await HealthService.checkPulse();
+
+        let status = 'online';
+        if (pulse.status === 'CRITICAL') status = 'offline';
+        else if (pulse.status === 'STRAINED') status = 'unstable';
 
         return {
-            status: res.ok ? 'online' : 'unstable',
-            latency: duration,
+            status,
+            latency: pulse.apiLatency,
+            dbLatency: pulse.dbLatency,
             lastChecked: new Date().toISOString()
         };
     } catch (e) {
         return {
             status: 'offline',
             latency: 0,
+            dbLatency: 0,
             lastChecked: new Date().toISOString()
         };
     }

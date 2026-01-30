@@ -51,6 +51,7 @@ export class XmlFactory {
         <Tipo>${data.tipoIdentificacion}</Tipo>
         <Numero>${data.numeroIdentificacion}</Numero>
     </Identificacion>
+    ${data.codigoActividad ? `<CodigoActividad>${data.codigoActividad}</CodigoActividad>` : ''}
     ${data.nombreComercial ? `<NombreComercial>${this.escapeXml(data.nombreComercial)}</NombreComercial>` : ''}
     ${this.buildUbicacion(data.ubicacion)}
     ${data.telefono ? `<Telefono>

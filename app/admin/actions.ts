@@ -7,6 +7,7 @@ import { getAuthOptions } from "@/lib/auth-options";
 
 export async function getGlobalAdminStats() {
     const session = await getServerSession(getAuthOptions());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }
@@ -63,6 +64,7 @@ export async function getGlobalAdminStats() {
 
 export async function getAllOrganizations() {
     const session = await getServerSession(getAuthOptions());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }
@@ -79,6 +81,7 @@ export async function getAllOrganizations() {
 
 export async function updateOrganizationPlan(orgId: string, plan: string) {
     const session = await getServerSession(getAuthOptions());
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!session || (session.user as any).role !== 'ADMIN') {
         throw new Error("No autorizado");
     }
@@ -92,6 +95,7 @@ export async function updateOrganizationPlan(orgId: string, plan: string) {
     const { AuditService } = await import("@/lib/security/audit");
     await AuditService.log({
         orgId: "ADMIN_CONSOLE",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         userId: (session.user as any).id,
         action: 'SUBSCRIPTION_CHANGE',
         details: { targetOrgId: orgId, newPlan: plan }
