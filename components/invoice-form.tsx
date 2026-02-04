@@ -644,7 +644,7 @@ export default function InvoiceForm() {
                             key="result" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                             className="max-w-2xl mx-auto py-12"
                         >
-                            <div className={`bg-[#0A0F1E] border ${result.status === 'success' ? 'border-success/30' : 'border-red-500/30'} rounded-[3rem] overflow-hidden shadow-2xl`}>
+                            <div className={`bg-[#0A0F1E] border ${result.status === 'success' ? 'border-success/30' : 'border-red-500/30'} rounded-[3rem] overflow-visible shadow-2xl`}>
                                 <div className={`h-1.5 w-full ${result.status === 'success' ? 'bg-success' : 'bg-red-500'}`} />
                                 <div className="p-16 text-center space-y-10">
                                     <div className={`w-28 h-28 rounded-full flex items-center justify-center mx-auto ${result.status === 'success' ? 'bg-success/20 text-success' : 'bg-red-500/20 text-red-500'}`}>
