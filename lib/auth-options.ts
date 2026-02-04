@@ -26,7 +26,7 @@ export function getAuthOptions(): NextAuthOptions {
                     email: { label: "Email", type: "email" },
                     password: { label: "Password", type: "password" },
                 },
-                async authorize(credentials) {
+                async authorize(credentials: any) {
                     if (!credentials?.email || !credentials?.password) {
                         throw new Error("Credenciales requeridas");
                     }
@@ -59,7 +59,7 @@ export function getAuthOptions(): NextAuthOptions {
                         role: user.role,
                         plan: user.organization?.plan,
                         subscriptionStatus: user.organization?.subscriptionStatus
-                    };
+                    } as any;
                 },
             }),
         ],
