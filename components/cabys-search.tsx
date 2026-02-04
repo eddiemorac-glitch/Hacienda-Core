@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Search } from "lucide-react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
+import { Search, AlertCircle } from "lucide-react";
 import { searchCabys, CabysItem } from "@/lib/hacienda/cabys-data";
 
 interface CabysSearchProps {
@@ -63,10 +64,39 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
 
     // [SURGICAL FIX] Use ref for click outside instead of overlay to prevent z-index/hover issues
     const containerRef = useRef<HTMLDivElement>(null);
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+
+    const updateCoords = () => {
+        if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            setCoords({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        }
+    };
+
+    useLayoutEffect(() => {
+        if (isOpen) {
+            updateCoords();
+            window.addEventListener('scroll', updateCoords, true);
+            window.addEventListener('resize', updateCoords);
+        }
+        return () => {
+            window.removeEventListener('scroll', updateCoords, true);
+            window.removeEventListener('resize', updateCoords);
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                // Check if the click was inside the portal
+                const portalElement = document.getElementById('cabys-portal-root');
+                if (portalElement && portalElement.contains(event.target as Node)) {
+                    return;
+                }
                 setIsOpen(false);
             }
         };
@@ -118,8 +148,18 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
                 )}
             </div>
 
-            {isOpen && (
-                <div className="absolute z-[1000] w-full mt-2 bg-[#080C17] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-xl ring-1 ring-white/5">
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div
+                    id="cabys-portal-root"
+                    style={{
+                        position: 'absolute',
+                        top: coords.top,
+                        left: coords.left,
+                        width: coords.width,
+                        zIndex: 9999
+                    }}
+                    className="mt-2 bg-[#080C17] border border-white/10 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-xl ring-1 ring-white/5 animate-in fade-in zoom-in-95 duration-200"
+                >
                     <div className="max-h-[350px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                         {isLoading ? (
                             <div className="p-10 flex flex-col items-center justify-center text-slate-500 gap-3">
@@ -140,15 +180,6 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
                                             onSelect(item);
                                             setQuery(item.descripcion);
                                             setIsOpen(false);
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                onSelect(item);
-                                                setQuery(item.descripcion);
-                                                setIsOpen(false);
-                                            }
                                         }}
                                         className="w-full text-left p-4 hover:bg-primary/10 rounded-xl flex items-start gap-4 group border border-transparent hover:border-primary/20 mb-1"
                                     >
@@ -179,7 +210,8 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
                             Mostrando top resultados más relevantes
                         </div>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
