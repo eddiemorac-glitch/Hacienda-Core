@@ -78,16 +78,31 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
     };
 
     useLayoutEffect(() => {
+        let rafId: number;
+
+        const loop = () => {
+            if (paramsRef.current.isOpen) {
+                updateCoords();
+                rafId = requestAnimationFrame(loop);
+            }
+        };
+
         if (isOpen) {
-            updateCoords();
-            window.addEventListener('scroll', updateCoords, true);
-            window.addEventListener('resize', updateCoords);
+            // [SURGICAL UPGRADE] Use rAF loop for sub-frame perfect positioning
+            // This eliminates "floating" or desync issues during fast scrolls
+            paramsRef.current.isOpen = true;
+            loop();
+        } else {
+            paramsRef.current.isOpen = false;
         }
+
         return () => {
-            window.removeEventListener('scroll', updateCoords, true);
-            window.removeEventListener('resize', updateCoords);
+            cancelAnimationFrame(rafId);
         };
     }, [isOpen]);
+
+    // Ref to hold mutable state for rAF loop access without re-binding
+    const paramsRef = useRef({ isOpen: false });
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
