@@ -8,7 +8,7 @@ import {
     ShieldCheck, Send, Loader2, FileCheck, AlertCircle,
     Trash2, PlusCircle, CreditCard,
     Download, Zap,
-    User, Mail, Hash, Calendar, DollarSign,
+    User, Mail, Hash, Calendar,
     ChevronRight, Settings,
     Cpu, Lock, Briefcase
 } from "lucide-react";
