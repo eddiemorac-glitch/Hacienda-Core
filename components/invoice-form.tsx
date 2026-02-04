@@ -365,8 +365,8 @@ export default function InvoiceForm() {
                                                 Monto Pago (CRC)
                                             </label>
                                             <div className="nova-input-group">
-                                                <DollarSign className="nova-input-icon w-4 h-4 text-emerald-400" />
-                                                <input type="number" value={repData.montoPago || ""} onChange={e => setRepData({ ...repData, montoPago: parseFloat(e.target.value) || 0 })} className="nova-input text-xl font-bold text-success border-success/20 bg-success/5" />
+                                                <div className="nova-input-icon w-3 h-3 text-emerald-500 flex items-center justify-center font-black text-sm">¢</div>
+                                                <input type="number" value={repData.montoPago || ""} onChange={e => setRepData({ ...repData, montoPago: parseFloat(e.target.value) || 0 })} className="nova-input text-xl font-bold text-success border-success/20 bg-success/5 !pl-10" />
                                             </div>
                                         </div>
                                         <div className="space-y-2">

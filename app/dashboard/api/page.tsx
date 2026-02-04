@@ -116,27 +116,44 @@ export default function ApiSettingsPage() {
                                 Mis API Keys
                             </h3>
 
-                            <form onSubmit={handleCreateKey} className="flex gap-4 mb-8">
-                                <input
-                                    value={newKeyName}
-                                    onChange={e => setNewKeyName(e.target.value)}
-                                    placeholder="Nombre de la llave (Ej: E-Commerce Main)"
-                                    className="modern-input flex-1"
-                                    disabled={isCreating}
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={isCreating || !newKeyName}
-                                    className="px-6 py-3 bg-primary text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all disabled:opacity-50 disabled:hover:shadow-none"
-                                >
-                                    {isCreating ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <Plus className="w-4 h-4" />
-                                    )}
-                                    {isCreating ? "GENERANDO..." : "GENERAR"}
-                                </button>
-                            </form>
+                            <div className="mb-6 space-y-2">
+                                <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                    Nombre de la Identificación <span className="text-primary italic font-medium">(Requerido)</span>
+                                </label>
+                                <form onSubmit={handleCreateKey} className="flex flex-col sm:flex-row gap-4">
+                                    <div className="relative flex-1">
+                                        <input
+                                            value={newKeyName}
+                                            onChange={e => setNewKeyName(e.target.value)}
+                                            placeholder="Ej: Tienda Online, App Móvil, etc."
+                                            className="modern-input w-full pr-10"
+                                            disabled={isCreating}
+                                        />
+                                        {!newKeyName && !isCreating && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-primary animate-pulse">
+                                                <AlertCircle className="w-4 h-4" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isCreating || !newKeyName}
+                                        className="px-8 py-3 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all disabled:opacity-30 disabled:hover:shadow-none hover:scale-[1.02] active:scale-98"
+                                    >
+                                        {isCreating ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Plus className="w-4 h-4" />
+                                        )}
+                                        {isCreating ? "GENERANDO..." : "GENERAR LLAVE API"}
+                                    </button>
+                                </form>
+                                {!newKeyName && !isCreating && (
+                                    <p className="text-[10px] text-primary/70 font-bold uppercase tracking-tighter ml-1">
+                                        ← Por favor ingrese un nombre para habilitar la generación
+                                    </p>
+                                )}
+                            </div>
 
                             {error && (
                                 <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-center gap-2">
