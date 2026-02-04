@@ -20,6 +20,7 @@ import Link from "next/link";
 import { getApiKeys, createNewApiKey, deleteApiKey, getApiUsage } from "../../api-key-actions";
 
 export default function ApiSettingsPage() {
+    console.log("[VERSION_V2.1] API Dashboard Loaded");
     const [keys, setKeys] = useState<any[]>([]);
     const [usage, setUsage] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
