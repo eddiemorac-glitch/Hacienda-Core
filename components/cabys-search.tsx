@@ -13,12 +13,12 @@ interface CabysSearchProps {
 export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<CabysItem[]>([]);
-    const [isOpen, setIsOpenState] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
-    const setIsOpen = (val: boolean) => {
-        setIsOpenState(val);
-        if (onOpenChange) onOpenChange(val);
-    };
+    // [FIX] Decouple parent notification from state updates to prevent render loops
+    useEffect(() => {
+        if (onOpenChange) onOpenChange(isOpen);
+    }, [isOpen, onOpenChange]);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -53,7 +53,7 @@ export function CabysSearch({ onSelect, onOpenChange }: CabysSearchProps) {
 
         const timeoutId = setTimeout(fetchResults, 400); // Debounce
         return () => clearTimeout(timeoutId);
-    }, [query, setIsOpen]);
+    }, [query]); // [FIX] Removed unstable dependencies
 
     // Función para limpiar la búsqueda
     const clearSearch = () => {
