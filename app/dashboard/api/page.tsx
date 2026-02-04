@@ -12,7 +12,9 @@ import {
     ShieldAlert,
     BarChart3,
     Terminal,
-    Book
+    Book,
+    Loader2,
+    AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import { getApiKeys, createNewApiKey, deleteApiKey, getApiUsage } from "../../api-key-actions";
@@ -21,9 +23,11 @@ export default function ApiSettingsPage() {
     const [keys, setKeys] = useState<any[]>([]);
     const [usage, setUsage] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
     const [newKeyName, setNewKeyName] = useState("");
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -46,16 +50,23 @@ export default function ApiSettingsPage() {
 
     const handleCreateKey = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newKeyName) return;
+        if (!newKeyName || isCreating) return;
+
+        setIsCreating(true);
+        setError(null);
         try {
             const res = await createNewApiKey(newKeyName);
             if (res.success) {
                 setGeneratedKey(res.key as string);
                 setNewKeyName("");
-                loadData();
+                await loadData();
+            } else {
+                setError(res.error || "Error al crear la llave");
             }
-        } catch (e) {
-            alert("Error al crear la llave");
+        } catch (e: any) {
+            setError(e.message || "Error de conexión al generar la llave");
+        } finally {
+            setIsCreating(false);
         }
     };
 
@@ -111,12 +122,28 @@ export default function ApiSettingsPage() {
                                     onChange={e => setNewKeyName(e.target.value)}
                                     placeholder="Nombre de la llave (Ej: E-Commerce Main)"
                                     className="modern-input flex-1"
+                                    disabled={isCreating}
                                 />
-                                <button className="px-6 py-3 bg-primary text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all">
-                                    <Plus className="w-4 h-4" />
-                                    GENERAR
+                                <button
+                                    type="submit"
+                                    disabled={isCreating || !newKeyName}
+                                    className="px-6 py-3 bg-primary text-white rounded-xl font-bold flex items-center gap-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all disabled:opacity-50 disabled:hover:shadow-none"
+                                >
+                                    {isCreating ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <Plus className="w-4 h-4" />
+                                    )}
+                                    {isCreating ? "GENERANDO..." : "GENERAR"}
                                 </button>
                             </form>
+
+                            {error && (
+                                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {error}
+                                </div>
+                            )}
 
                             <AnimatePresence>
                                 {generatedKey && (
@@ -151,26 +178,35 @@ export default function ApiSettingsPage() {
                             </AnimatePresence>
 
                             <div className="space-y-4">
-                                {keys.map(key => (
-                                    <div key={key.id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-white/10 transition-all">
-                                        <div>
-                                            <div className="font-bold text-white">{key.name}</div>
-                                            <div className="text-xs text-slate-500 font-mono mt-1">
-                                                Prefix: {key.prefix}... • Last used: {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}
+                                {loading ? (
+                                    <div className="flex flex-col items-center py-10 gap-3">
+                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                        <p className="text-slate-500 text-sm">Cargando llaves...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {keys.map(key => (
+                                            <div key={key.id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-white/10 transition-all">
+                                                <div>
+                                                    <div className="font-bold text-white">{key.name}</div>
+                                                    <div className="text-xs text-slate-500 font-mono mt-1">
+                                                        Prefix: {key.prefix}... • Last used: {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : 'Never'}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteKey(key.id)}
+                                                    className="p-2 text-slate-500 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                        </div>
-                                        <button
-                                            onClick={() => handleDeleteKey(key.id)}
-                                            className="p-2 text-slate-500 hover:text-red-500 transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                                {keys.length === 0 && !loading && (
-                                    <div className="text-center py-10 text-slate-500 text-sm">
-                                        No tiene llaves API activas.
-                                    </div>
+                                        ))}
+                                        {keys.length === 0 && (
+                                            <div className="text-center py-10 text-slate-500 text-sm">
+                                                No tiene llaves API activas.
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </section>
@@ -185,25 +221,38 @@ export default function ApiSettingsPage() {
                             </h3>
 
                             <div className="space-y-4">
-                                {usage.map(u => (
-                                    <div key={u.id} className="space-y-2">
-                                        <div className="flex justify-between text-xs font-medium">
-                                            <span className="text-slate-400">{new Date(u.date).toLocaleDateString()}</span>
-                                            <span className="text-white">{u.calls} llamadas</span>
-                                        </div>
-                                        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${Math.min((u.calls / 100) * 100, 100)}%` }} // Assuming 100 as baseline for trial
-                                                className="bg-primary h-full rounded-full"
-                                            />
-                                        </div>
+                                {loading ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="animate-pulse space-y-2">
+                                                <div className="h-3 bg-white/5 rounded w-1/2" />
+                                                <div className="h-2 bg-white/5 rounded w-full" />
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
-                                {usage.length === 0 && !loading && (
-                                    <div className="text-center py-10 text-slate-500 text-sm italic">
-                                        No hay datos de consumo registrados.
-                                    </div>
+                                ) : (
+                                    <>
+                                        {usage.map(u => (
+                                            <div key={u.id} className="space-y-2">
+                                                <div className="flex justify-between text-xs font-medium">
+                                                    <span className="text-slate-400">{new Date(u.date).toLocaleDateString()}</span>
+                                                    <span className="text-white">{u.calls} llamadas</span>
+                                                </div>
+                                                <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${Math.min((u.calls / 100) * 100, 100)}%` }} // Assuming 100 as baseline for trial
+                                                        className="bg-primary h-full rounded-full"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {usage.length === 0 && (
+                                            <div className="text-center py-10 text-slate-500 text-sm italic">
+                                                No hay datos de consumo registrados.
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </section>

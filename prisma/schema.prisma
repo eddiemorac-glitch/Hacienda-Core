@@ -209,3 +209,13 @@ model UpgradeRequest {
   tilopayStatus   String?
 }
 
+
+// [CABYS] Catálogo de Bienes y Servicios
+// Se utiliza para búsqueda rápida y autocompletado en la factura
+model Cabys {
+  codigo      String @id
+  descripcion String
+  impuesto    Decimal @db.Decimal(5, 2) // Porcentaje de impuesto (ej: 13.00)
+
+  @@index([descripcion])
+}

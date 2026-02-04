@@ -73,3 +73,5 @@ test-schema-sync.js
 update-hacienda-user.ts
 build.log
 full_lint.json
+
+.vercel

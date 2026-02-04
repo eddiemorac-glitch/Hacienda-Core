@@ -8,6 +8,11 @@ declare module "next-auth" {
             orgId: string | null;
             role: string;
             plan?: string;
+            haciendaEnv?: string;
+            subscriptionStatus?: string;
+            haciendaUser?: string;
+            hasHaciendaP12?: boolean;
+            cedula?: string;
         } & DefaultSession["user"];
     }
 
@@ -15,6 +20,11 @@ declare module "next-auth" {
         orgId: string | null;
         role: string;
         plan?: string;
+        haciendaEnv?: string;
+        subscriptionStatus?: string;
+        haciendaUser?: string;
+        hasHaciendaP12?: boolean;
+        cedula?: string;
     }
 }
 
@@ -24,5 +34,7 @@ declare module "next-auth/jwt" {
         orgId: string | null;
         role: string;
         plan?: string;
+        haciendaEnv?: string;
+        subscriptionStatus?: string;
     }
 }

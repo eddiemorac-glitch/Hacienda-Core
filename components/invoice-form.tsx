@@ -6,13 +6,12 @@ import { processDocument } from "@/app/actions";
 import { DocumentState } from "@/lib/hacienda/document-service";
 import {
     ShieldCheck, Send, Loader2, FileCheck, AlertCircle,
-    Trash2, PlusCircle, CreditCard, ShoppingBag,
-    Receipt, Download, Check, Zap, RotateCcw,
+    Trash2, PlusCircle, CreditCard,
+    Download, Zap,
     User, Mail, Hash, Calendar, DollarSign,
-    ChevronRight, ArrowLeft, Info, Settings,
-    Cpu, Globe, Lock, Briefcase
+    ChevronRight, Settings,
+    Cpu, Lock, Briefcase
 } from "lucide-react";
-import Link from "next/link";
 import { CabysSearch } from "./cabys-search";
 import { CabysItem } from "@/lib/hacienda/cabys-data";
 import { calcularLinea, redondear } from "@/lib/utils/calculations";
@@ -82,6 +81,9 @@ export default function InvoiceForm() {
         numeroIdentificacion: ""
     });
 
+    // [STATE LIFTING] Track active menu for z-index management
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
     useEffect(() => {
         async function fetchConfig() {
             try {
@@ -91,9 +93,10 @@ export default function InvoiceForm() {
 
                 // [FIX] Cargar datos del emisor desde la organización
                 if (stats.org) {
-                    const cedula = (stats.org as any).cedula || "";
+                    const org = stats.org as { cedula: string; name: string };
+                    const cedula = org.cedula || "";
                     setEmisorData({
-                        nombre: (stats.org as any).name || "",
+                        nombre: org.name || "",
                         tipoIdentificacion: getTipoIdentificacion(cedula),
                         numeroIdentificacion: cedula
                     });
@@ -382,7 +385,7 @@ export default function InvoiceForm() {
                                         <div className="hidden lg:grid grid-cols-12 gap-6 px-4 text-[9px] font-black text-slate-600 uppercase tracking-widest">
                                             <div className="col-span-6 flex items-center gap-2">
                                                 Buscador de Producto Legal (CAByS)
-                                                <div className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px] animate-pulse">Sentinel Intel</div>
+                                                <div className="px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[8px]">Sentinel Intel</div>
                                             </div>
                                             <div className="col-span-1 text-center">Cant.</div>
                                             <div className="col-span-2 text-right">Unitario ¢</div>
@@ -391,11 +394,16 @@ export default function InvoiceForm() {
 
                                         {lines.map((l, i) => {
                                             const lineTotal = l.cabys ? calcularLinea(l.cantidad, l.precio, l.isIvi, l.cabys.impuesto, l.descuento).montoTotalLinea : 0;
+                                            const isMenuOpen = activeMenuId === l.id;
+
                                             return (
-                                                <div key={l.id} className="grid grid-cols-12 gap-6 items-center p-6 bg-white/[0.02] hover:bg-white/[0.04] rounded-3xl border border-white/5 group transition-all relative overflow-hidden">
-                                                    <div className="absolute inset-y-0 left-0 w-1 bg-primary/20 group-hover:bg-primary transition-all" />
+                                                <div key={l.id} className={`grid grid-cols-12 gap-6 items-center p-6 bg-white/[0.02] hover:bg-white/[0.04] rounded-3xl border border-white/5 group relative overflow-visible ${isMenuOpen ? 'z-[1000] ring-1 ring-primary/20 shadow-2xl' : 'z-0'}`}>
+                                                    <div className="absolute inset-y-0 left-0 w-1 bg-primary/20 group-hover:bg-primary" />
                                                     <div className="col-span-12 lg:col-span-6 space-y-4">
-                                                        <CabysSearch onSelect={item => setLines(prev => prev.map(x => x.id === l.id ? { ...x, cabys: item } : x))} />
+                                                        <CabysSearch
+                                                            onSelect={item => setLines(prev => prev.map(x => x.id === l.id ? { ...x, cabys: item } : x))}
+                                                            onOpenChange={(isOpen) => setActiveMenuId(isOpen ? l.id : null)}
+                                                        />
                                                         <div className="relative">
                                                             <input
                                                                 placeholder="Descripción personalizada para este concepto..."
@@ -414,8 +422,17 @@ export default function InvoiceForm() {
                                                     <div className="col-span-8 lg:col-span-2">
                                                         <label className="lg:hidden text-[9px] font-black text-slate-600 block mb-1">PRECIO ¢</label>
                                                         <div className="nova-input-group">
-                                                            <DollarSign className="nova-input-icon w-3 h-3 text-emerald-500/50" />
-                                                            <input type="number" value={l.precio} onChange={e => setLines(prev => prev.map(x => x.id === l.id ? { ...x, price: parseFloat(e.target.value) || 0 } : x))} className="nova-input text-right font-mono font-black h-12 text-emerald-400 !rounded-xl !pl-8" />
+                                                            <div className="nova-input-icon w-3 h-3 text-emerald-500/50 flex items-center justify-center font-black text-xs">¢</div>
+                                                            <input
+                                                                type="number"
+                                                                value={l.precio === 0 ? '' : l.precio}
+                                                                onChange={e => {
+                                                                    const val = e.target.value;
+                                                                    setLines(prev => prev.map(x => x.id === l.id ? { ...x, precio: val === '' ? 0 : parseFloat(val) } : x));
+                                                                }}
+                                                                placeholder="0.00"
+                                                                className="nova-input text-right font-mono font-black h-12 text-emerald-400 !rounded-xl !pl-8"
+                                                            />
                                                         </div>
                                                     </div>
                                                     <div className="col-span-10 lg:col-span-2 text-right pt-2 border-l border-white/5 pl-8 hidden lg:block">

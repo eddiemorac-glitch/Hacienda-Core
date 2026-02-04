@@ -9,8 +9,8 @@ import { HaciendaClient } from '@/lib/hacienda/api-client';
 export async function getDashboardStats() {
     try {
         const session = await getServerSession(getAuthOptions());
-        if (!session || !(session.user as any).orgId) return { todayCount: 0, totalPending: 0, org: null };
-        const orgId = (session.user as any).orgId;
+        if (!session || !session.user?.orgId) return { todayCount: 0, totalPending: 0, org: null };
+        const orgId = session.user.orgId;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);

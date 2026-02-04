@@ -14,11 +14,17 @@ export class ApiKeyService {
      * Returns the raw key (only shown once).
      */
     static async generate(orgId: string, name: string) {
-        const rawKey = `hc_${orgId.slice(0, 4)}_${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+        if (!orgId) throw new Error("ID de organización requerido para generar API Key");
+
+        // HC prefix + 4 chars from org + 26 random chars
+        const randomBuffer = crypto.randomBytes(16).toString('hex');
+        const rawKey = `hc_${orgId.slice(0, 4)}_${randomBuffer}`;
         const prefix = rawKey.slice(0, 8);
 
         // Hash the key for storage
         const hashedKey = crypto.createHash('sha256').update(rawKey).digest('hex');
+
+        console.log(`[API_KEY_SERVICE] Generating new key for org: ${orgId}, name: ${name}`);
 
         await prisma.apiKey.create({
             data: {

@@ -2,15 +2,20 @@
 
 import Link from "next/link";
 import {
-    Shield, Home, FileText, Activity, LogOut, Terminal, Settings,
+    Home, FileText, Activity, LogOut, Terminal, Settings,
     Book, BookOpen, ShieldCheck, CreditCard, Zap, Crown, Sparkles,
-    Clock, AlertCircle, LayoutDashboard
+    Clock, LayoutDashboard
 } from "lucide-react";
 import { getMyUpgradeRequest } from "@/app/upgrade-actions";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useFrontendSwarm } from "@/hooks/use-swarm";
 import { useEffect, useState } from "react";
+import { updateHaciendaConfig } from "@/app/settings-actions";
+import { getDashboardStats } from "@/app/dashboard/actions/stats";
+// Basic feedback logic
+// Actually, let's assume we can use a local state for feedback or just generic console for now if no toast context.
+
 
 /**
  * [SWARM - SIDEBAR]
@@ -49,24 +54,63 @@ export function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
     const { isHydrated, session, updateSession } = useFrontendSwarm();
-    const [livePlan, setLivePlan] = useState<string | null>(null);
-    const [isCheckingUpgrade, setIsCheckingUpgrade] = useState(false);
+    const [livePlan] = useState<string | null>(null);
     const [hasPendingUpgrade, setHasPendingUpgrade] = useState(false);
 
     // Get plan from session (may be stale) or live fetch
-    const sessionPlan = (session?.user as any)?.plan || 'STARTER';
+    const sessionPlan = session?.user?.plan || 'STARTER';
     const currentPlan = livePlan || sessionPlan;
     const planConfig = PLAN_CONFIG[currentPlan as keyof typeof PLAN_CONFIG] || PLAN_CONFIG.STARTER;
     const PlanIcon = planConfig.icon;
 
-    const isAdmin = (session?.user as any)?.role === 'ADMIN';
-    const subscriptionStatus = (session?.user as any)?.subscriptionStatus;
+    const [haciendaEnv, setHaciendaEnv] = useState<'staging' | 'production'>('staging');
+    const [haciendaUser, setHaciendaUser] = useState('');
+    const [isTogglingEnv, setIsTogglingEnv] = useState(false);
+
+    useEffect(() => {
+        getDashboardStats().then(stats => {
+            if (stats.org) {
+                setHaciendaEnv((stats.org.haciendaEnv as 'staging' | 'production') || 'staging');
+                setHaciendaUser(stats.org.haciendaUser || '');
+            }
+        });
+    }, []);
+
+    const toggleEnv = async () => {
+        if (isTogglingEnv) return;
+        setIsTogglingEnv(true);
+        const newEnv = haciendaEnv === 'staging' ? 'production' : 'staging';
+
+        // Optimistic update
+        setHaciendaEnv(newEnv);
+
+        try {
+            await updateHaciendaConfig({
+                haciendaUser: haciendaUser, // Required by signature
+                haciendaEnv: newEnv,
+                haciendaPass: '',
+                haciendaPin: '',
+                haciendaP12: ''
+            });
+            // Force refresh to ensure all server comps know
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+            setHaciendaEnv(haciendaEnv); // Rollback
+        } finally {
+            setIsTogglingEnv(false);
+        }
+    };
+
+
+    const isAdmin = session?.user?.role === 'ADMIN';
+    const subscriptionStatus = session?.user?.subscriptionStatus;
     const isSubscriptionActive = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 
     // Determine feature access based on plan
     const hasPremiumFeatures = ['BUSINESS', 'ENTERPRISE'].includes(currentPlan);
     const hasApiAccess = currentPlan === 'ENTERPRISE' || isAdmin;
-    const hasHaciendaConfig = !!((session?.user as any)?.haciendaUser && (session?.user as any)?.hasHaciendaP12);
+    const hasHaciendaConfig = !!(session?.user?.haciendaUser && session?.user?.hasHaciendaP12);
 
     // [SYNC] Refresh session when coming back from Stripe or on subscription change detection
     useEffect(() => {
@@ -175,8 +219,30 @@ export function Sidebar() {
                 </button>
             </nav>
 
+            {/* Environment Toggle */}
+            <div className="mt-auto px-2 pb-4">
+                <button
+                    onClick={toggleEnv}
+                    disabled={isTogglingEnv || !haciendaUser} // Disable if no config, preventing bugs
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border transition-all ${haciendaEnv === 'production'
+                        ? 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20'
+                        : 'bg-amber-400/10 border-amber-400/20 hover:bg-amber-400/20'
+                        }`}
+                >
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${haciendaEnv === 'production' ? 'bg-rose-500' : 'bg-amber-400'}`} />
+                    <div className="flex flex-col items-start">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${haciendaEnv === 'production' ? 'text-rose-400' : 'text-amber-400'}`}>
+                            {haciendaEnv === 'production' ? 'Producción' : 'Modo Pruebas'}
+                        </span>
+                        <span className="text-[9px] text-slate-500 font-medium">
+                            {haciendaEnv === 'production' ? 'Facturación Real' : 'Sin Validez Fiscal'}
+                        </span>
+                    </div>
+                </button>
+            </div>
+
             {/* Status Footer */}
-            <div className="mt-auto pt-4 border-t border-white/5 flex flex-col gap-4">
+            <div className="pt-4 border-t border-white/5 flex flex-col gap-4">
                 <div className="flex items-center gap-3 px-2">
                     <div className={`w-2 h-2 rounded-full ${isSubscriptionActive || currentPlan === 'STARTER' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`} />
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-0 md:opacity-100 group-hover:opacity-100 transition-opacity whitespace-nowrap">

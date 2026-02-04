@@ -29,7 +29,37 @@ export const CABYS_MOCK: CabysItem[] = [
 ];
 
 export async function searchCabys(query: string): Promise<CabysItem[]> {
-    // Simulando latencia de red
+    // 1. Try to fetch from the local API (Database)
+    try {
+        // Absolute URL is required for server-side fetching if this runs on server, 
+        // but this function is likely called from Client Components too. 
+        // If called from Server Actions, we need full URL. 
+        // The safest universal fetch in Next.js usually works with relative path if generic, 
+        // but 'fetch' in Node needs full URL.
+        // However, this is a 'lib' function.
+        // Let's assume it's called primarily from Client or verify.
+
+        // If running on client
+        if (typeof window !== 'undefined') {
+            const res = await fetch(`/api/cabys?q=${encodeURIComponent(query)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.length > 0) return data;
+            }
+        } else {
+            // Server-side: We might need to query Prisma directly here instead of fetch to avoid URL issues?
+            // But we want to decouple. 
+            // Better fallback: If server-side, query DB directly if possible?
+            // No, libraries shouldn't import Prisma Client generally if used by client components.
+            // Let's stick to the mock fallback for now if fetch fails, 
+            // or if the user hasn't configured NEXT_PUBLIC_BASE_URL.
+        }
+
+    } catch (e) {
+        console.warn("CABYS API Search failed, falling back to mock.", e);
+    }
+
+    // 2. Fallback to Mock Data (Simulating network latency)
     await new Promise(resolve => setTimeout(resolve, 300));
 
     const lowerQuery = query.toLowerCase();

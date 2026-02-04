@@ -8,19 +8,15 @@ import { useFrontendSwarm } from "@/hooks/use-swarm"; // [SYNC]
 import { SwarmHealthMonitor } from "@/components/swarm-health";
 import { SentinelNotifications } from "@/components/sentinel-notifications";
 import { PredictivePrefetch } from "@/components/predictive-prefetch";
-import { SentinelCoach } from "@/components/sentinel-coach";
 import {
     ShieldCheck,
     FileText,
     Plus,
     Search,
     RefreshCw,
-    CreditCard,
-    ExternalLink,
     Zap,
     Loader2,
     Activity,
-    Server,
     ChevronRight,
     TrendingUp,
     LayoutDashboard,
@@ -544,7 +540,13 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
                                             <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
-                                                {manualResult.status['respuesta-xml'] ? "La factura ha sido procesada correctamente por los nodos de Hacienda." : "Hacienda ha recibido el documento, pero aún está en proceso de validación."}
+                                                {(() => {
+                                                    const estado = (manualResult.status['ind-estado'] || '').toLowerCase();
+                                                    if (estado === 'rechazado') return "El documento ha sido RECHAZADO por Hacienda. Por favor revise el XML de respuesta para más detalles.";
+                                                    if (estado === 'aceptado') return "La factura ha sido ACEPTADA y procesada correctamente por los nodos de Hacienda.";
+                                                    if (manualResult.status['respuesta-xml']) return "Hacienda ha emitido una respuesta, pero el estado no es concluyente.";
+                                                    return "Hacienda ha recibido el documento, pero aún está en proceso de validación.";
+                                                })()}
                                             </p>
                                         </div>
                                     ) : (
